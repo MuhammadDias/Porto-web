@@ -14,10 +14,10 @@ const Footer = () => {
   ];
 
   const socialLinks = [
-    { icon: FiGithub, href: 'https://github.com', label: 'GitHub' },
-    { icon: FiLinkedin, href: 'https://linkedin.com', label: 'LinkedIn' },
+    { icon: FiGithub, href: 'https://github.com/MuhammadDias', label: 'GitHub' },
+    { icon: FiLinkedin, href: 'https://www.linkedin.com/in/m-dias-9a3364278?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app', label: 'LinkedIn' },
     { icon: FiTwitter, href: 'https://twitter.com', label: 'Twitter' },
-    { icon: FiMail, href: 'mailto:contact@example.com', label: 'Email' },
+    { icon: FiMail, href: 'diasizzat222@gmail.com', label: 'Email' },
   ];
 
   return (
@@ -61,6 +61,9 @@ const Footer = () => {
               <li>
                 <span className="text-slate-400 text-sm">Videography</span>
               </li>
+              <li>
+                <span className="text-slate-400 text-sm">Frontend</span>
+              </li>
             </ul>
           </motion.div>
 
@@ -69,8 +72,8 @@ const Footer = () => {
             <h4 className="text-white font-semibold mb-4">Contact</h4>
             <ul className="space-y-2">
               <li>
-                <a href="mailto:contact@example.com" className="text-slate-400 hover:text-cyan-400 transition-colors text-sm">
-                  contact@example.com
+                <a href="mailto:diasizzat222@gmail.com" className="text-slate-400 hover:text-cyan-400 transition-colors text-sm">
+                  diasizzat222@gmail.com
                 </a>
               </li>
               <li>

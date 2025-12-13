@@ -123,9 +123,9 @@ const Home = () => {
               <span className="text-sm text-cyan-400 font-mono">Available for work</span>
             </div>
             <h1 className="text-4xl md:text-6xl font-bold mb-4">
-              Hi, I'm <span className="gradient-text">Creative Developer</span>
+              I'm Dias <span className="gradient-text">Creative Developer</span>
             </h1>
-            <p className="text-lg text-slate-400 mb-8">I create stunning digital experiences with modern technologies. Specializing in React, motion design, and user-centered interfaces.</p>
+            <p className="text-lg text-slate-400 mb-8">I create stunning digital experiences with modern technologies. Specializing in Graphic Design, motion design, UI/UX Design.</p>
             <div className="flex flex-wrap gap-4">
               <Link to="/projects" className="btn-primary">
                 View Projects <FiArrowRight className="inline ml-2" />

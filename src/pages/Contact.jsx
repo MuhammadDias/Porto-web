@@ -52,19 +52,19 @@ export default function Contact() {
     {
       icon: FiGithub,
       label: 'GitHub',
-      href: 'https://github.com',
+      href: 'https://github.com/MuhammadDias',
       color: 'hover:text-white',
     },
     {
       icon: FiLinkedin,
       label: 'LinkedIn',
-      href: 'https://linkedin.com',
+      href: 'https://www.linkedin.com/in/m-dias-9a3364278?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app',
       color: 'hover:text-blue-400',
     },
     {
       icon: FiInstagram,
       label: 'Instagram',
-      href: 'https://instagram.com',
+      href: 'https://www.instagram.com/userswallow_/',
       color: 'hover:text-pink-400',
     },
   ];

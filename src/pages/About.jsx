@@ -157,9 +157,13 @@ export default function About() {
                     <FiMail className="w-4 h-4" />
                     Contact Me
                   </a>
-                  <a href="#" className="btn-secondary flex items-center justify-center gap-2">
+                  <a
+                    href="/CV DPR Fest.jpg" // Sesuaikan dengan nama file di folder public
+                    download="CV_Muhammad_Dias.jpg" // Nama file saat tersimpan di komputer user
+                    className="btn-secondary flex items-center justify-center gap-2"
+                  >
                     <FiDownload className="w-4 h-4" />
-                    CV
+                    Download CV
                   </a>
                 </motion.div>
               </div>
