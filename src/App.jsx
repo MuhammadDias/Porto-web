@@ -11,6 +11,7 @@ import ProjectCategory from './pages/ProjectCategory';
 import AdminDashboard from './admin/AdminDashboard';
 import ProtectedRoute from './admin/ProtectedRoute';
 import Login from './admin/Login';
+import TestDither from './pages/TestDither'
 import { supabase } from './supabase/client';
 import './index.css';
 
@@ -29,6 +30,7 @@ function AppContent() {
           <Route path="/projects/:category" element={<ProjectCategory />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/admin/login" element={<Login />} />
+          <Route path="/test" element={<TestDither />} />
           <Route
             path="/admin"
             element={

@@ -125,7 +125,7 @@ const Footer = () => {
               License
             </a>
           </div>
-          <p className="text-xs text-slate-500 pt-4">Built with React, Tailwind CSS, and Supabase</p>
+          <p className="text-xs text-slate-500 pt-4">Built with React, Tailwind CSS</p>
         </motion.div>
       </div>
     </footer>

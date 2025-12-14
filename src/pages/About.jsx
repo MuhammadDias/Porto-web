@@ -158,8 +158,8 @@ export default function About() {
                     Contact Me
                   </a>
                   <a
-                    href="/CV DPR Fest.jpg" // Sesuaikan dengan nama file di folder public
-                    download="CV_Muhammad_Dias.jpg" // Nama file saat tersimpan di komputer user
+                    href="/CV DPR Fest.jpg" 
+                    download="CV_Muhammad_Dias.jpg"
                     className="btn-secondary flex items-center justify-center gap-2"
                   >
                     <FiDownload className="w-4 h-4" />
