@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { FiArrowRight, FiGithub, FiLinkedin, FiTwitter } from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiArrowRight, FiGithub, FiLinkedin, FiTwitter, FiX } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabase/client';
 import Dither from '../components/Dither';
@@ -8,6 +8,7 @@ import Dither from '../components/Dither';
 const Home = () => {
   const [skills, setSkills] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [selectedProject, setSelectedProject] = useState(null);
 
   // Data dummy (Backup)
   const dummySkills = [
@@ -65,7 +66,10 @@ const Home = () => {
     fetchRecentProjects();
     const skillsSub = supabase.channel('skills').on('postgres_changes', { event: '*', schema: 'public', table: 'skills' }, fetchSkills).subscribe();
     const projectsSub = supabase.channel('projects').on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, fetchRecentProjects).subscribe();
-    return () => { skillsSub.unsubscribe(); projectsSub.unsubscribe(); };
+    return () => {
+      skillsSub.unsubscribe();
+      projectsSub.unsubscribe();
+    };
   }, []);
 
   const socialLinks = [
@@ -80,30 +84,19 @@ const Home = () => {
   // - bg-white/10: Permukaan lebih terang
   // - border-white/10: Garis tepi lebih jelas
   // - shadow-lg shadow-black/20: Bayangan lembut biar ngambang
-  const iOSGlassStyle = "border border-white/10 bg-white/10 backdrop-blur-lg shadow-lg shadow-black/20";
+  const iOSGlassStyle = 'border border-white/10 bg-white/10 backdrop-blur-lg shadow-lg shadow-black/20';
 
   return (
     <div className="min-h-screen bg-[#0f172a] relative overflow-hidden">
-      
       {/* BACKGROUND DITHER */}
       <div className="absolute inset-0 z-0 opacity-60 pointer-events-none">
-        <Dither
-          waveColor={[0.1, 0.7, 0.8]} 
-          colorNum={4}
-          pixelSize={3}
-          waveSpeed={0.05}
-          waveFrequency={3}
-          waveAmplitude={0.2}
-          enableMouseInteraction={true}
-          mouseRadius={0.4}
-        />
+        <Dither waveColor={[0.1, 0.7, 0.8]} colorNum={4} pixelSize={3} waveSpeed={0.05} waveFrequency={3} waveAmplitude={0.2} enableMouseInteraction={true} mouseRadius={0.4} />
       </div>
 
       <div className="relative z-10 pt-20">
         {/* Hero Section */}
         <section className="container mx-auto px-4 md:px-8 py-12 md:py-24">
           <div className="grid md:grid-cols-2 gap-12 items-center">
-            
             {/* Left Content */}
             <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }}>
               <div className="flex items-center space-x-2 mb-4">
@@ -113,51 +106,47 @@ const Home = () => {
               <h1 className="text-4xl md:text-6xl font-bold mb-4 text-white">
                 I'm Dias <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Creative Developer</span>
               </h1>
-              <p className="text-lg text-slate-400 mb-8">
-                I create stunning digital experiences with modern technologies. Specializing in Graphic Design, motion design, UI/UX Design.
-              </p>
+              <p className="text-lg text-slate-400 mb-8">I create stunning digital experiences with modern technologies. Specializing in Graphic Design, motion design, UI/UX Design.</p>
               <div className="flex flex-wrap gap-4">
                 <Link to="/projects" className="btn-primary">
                   View Projects <FiArrowRight className="inline ml-2" />
                 </Link>
-                <Link to="/contact" className="btn-secondary border border-white/10 bg-white/10 backdrop-blur-lg shadow-lg shadow-black/20 hover:bg-white/15 
-                         border border-white/20 hover:border-white/30">
+                <Link
+                  to="/contact"
+                  className="btn-secondary border border-white/10 bg-white/10 backdrop-blur-lg shadow-lg shadow-black/20 hover:bg-white/15 
+                         border border-white/20 hover:border-white/30"
+                >
                   Get In Touch
                 </Link>
               </div>
             </motion.div>
 
             {/* Right Visual - FLOATING ICONS WITH NEW GLASS STYLE */}
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.8 }} 
-              animate={{ opacity: 1, scale: 1 }} 
-              transition={{ duration: 0.5, delay: 0.2 }} 
-              className="relative hidden md:block h-[400px]"
-            >
-               <div className="relative w-full h-full flex justify-center items-center">
-                  <div className="absolute w-64 h-64 md:w-80 md:h-80 bg-gradient-to-tr from-cyan-500/20 to-blue-500/20 rounded-full blur-2xl animate-pulse border border-white/5"></div>
-                  
-                  {[...Array(3)].map((_, i) => (
-                    <motion.div
-                      key={i}
-                      animate={{
-                        y: [0, -20, 0],
-                        rotate: [0, 360],
-                      }}
-                      transition={{
-                        duration: 5 + i,
-                        repeat: Infinity,
-                        ease: 'easeInOut',
-                      }}
-                      // UPDATE STYLE DISINI
-                      className={`absolute w-16 h-16 rounded-2xl flex items-center justify-center text-3xl ${iOSGlassStyle}
+            <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.2 }} className="relative hidden md:block h-[400px]">
+              <div className="relative w-full h-full flex justify-center items-center">
+                <div className="absolute w-64 h-64 md:w-80 md:h-80 bg-gradient-to-tr from-cyan-500/20 to-blue-500/20 rounded-full blur-2xl animate-pulse border border-white/5"></div>
+
+                {[...Array(3)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    animate={{
+                      y: [0, -20, 0],
+                      rotate: [0, 360],
+                    }}
+                    transition={{
+                      duration: 5 + i,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    }}
+                    // UPDATE STYLE DISINI
+                    className={`absolute w-16 h-16 rounded-2xl flex items-center justify-center text-3xl ${iOSGlassStyle}
                         ${i === 0 ? 'top-10 left-10' : i === 1 ? 'bottom-20 right-10' : 'top-1/2 right-0'}
                       `}
-                    >
-                      {i === 0 ? '🚀' : i === 1 ? '🎨' : '💻'}
-                    </motion.div>
-                  ))}
-               </div>
+                  >
+                    {i === 0 ? '🚀' : i === 1 ? '🎨' : '💻'}
+                  </motion.div>
+                ))}
+              </div>
             </motion.div>
           </div>
         </section>
@@ -170,12 +159,12 @@ const Home = () => {
           </motion.div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {skills.map((skill, index) => (
-              <motion.div 
-                key={skill.id} 
-                initial={{ opacity: 0, y: 20 }} 
-                whileInView={{ opacity: 1, y: 0 }} 
-                viewport={{ once: true }} 
-                transition={{ delay: index * 0.1 }} 
+              <motion.div
+                key={skill.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
                 // UPDATE STYLE DISINI (Saya tambah rounded-2xl biar lebih modern)
                 className={`rounded-2xl p-6 card-hover ${iOSGlassStyle}`}
               >
@@ -203,7 +192,9 @@ const Home = () => {
                 <h2 className="text-3xl font-bold mb-4 text-white">Recent Projects</h2>
                 <p className="text-slate-400">Check out some of my latest work</p>
               </div>
-              <Link to="/projects" className="btn-secondary">View All</Link>
+              <Link to="/projects" className="btn-secondary">
+                View All
+              </Link>
             </div>
           </motion.div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -212,6 +203,7 @@ const Home = () => {
                 key={project.id}
                 initial={{ opacity: 0, scale: 0.9 }}
                 whileInView={{ opacity: 1, scale: 1 }}
+                whileHover={{ y: -10, scale: 1.02, transition: { duration: 0.2, delay: 0 } }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
                 // UPDATE STYLE DISINI (Pakai rounded-3xl biar makin kerasa iOS-nya)
@@ -224,8 +216,10 @@ const Home = () => {
                     <span className="text-xs text-slate-400">{new Date(project.created_at).toLocaleDateString()}</span>
                   </div>
                   <h3 className="font-semibold mb-2 text-white">{project.title}</h3>
-                  <p className="text-sm text-slate-400 mb-4">{project.description}</p>
-                  <Link to={`/projects/${project.category.toLowerCase().replace(' ', '-')}`} className="text-cyan-400 text-sm font-medium hover:text-cyan-300 transition-colors">View Details →</Link>
+                  <p className="text-sm text-slate-400 mb-4 line-clamp-3">{project.description}</p>
+                  <button onClick={() => setSelectedProject(project)} className="text-cyan-400 text-sm font-medium hover:text-cyan-300 transition-colors flex items-center gap-2">
+                    View Details <FiArrowRight />
+                  </button>
                 </div>
               </motion.div>
             ))}
@@ -234,10 +228,10 @@ const Home = () => {
 
         {/* Social Links */}
         <section className="container mx-auto px-4 md:px-8 py-12">
-          <motion.div 
-            initial={{ opacity: 0 }} 
-            whileInView={{ opacity: 1 }} 
-            viewport={{ once: true }} 
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
             // UPDATE STYLE DISINI (Pakai rounded-3xl dan blur lebih kuat lagi)
             className="rounded-3xl p-8 md:p-12 text-center border border-white/10 bg-white/10 backdrop-blur-xl shadow-2xl shadow-black/30"
           >
@@ -266,6 +260,40 @@ const Home = () => {
           </motion.div>
         </section>
       </div>
+
+      {/* Project Detail Modal */}
+      <AnimatePresence>
+        {selectedProject && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedProject(null)}>
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className={`relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl p-6 md:p-8 ${iOSGlassStyle} bg-[#0f172a]/90`}
+            >
+              <button onClick={() => setSelectedProject(null)} className="absolute top-4 right-4 p-2 rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors z-10">
+                <FiX size={24} />
+              </button>
+
+              <div className="aspect-video w-full rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 mb-6 overflow-hidden relative">
+                {selectedProject.image_url && !selectedProject.image_url.includes('placeholder') && <img src={selectedProject.image_url} alt={selectedProject.title} className="absolute inset-0 w-full h-full object-cover" />}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-4 mb-6">
+                <span className="px-4 py-1.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-medium">{selectedProject.category}</span>
+                <span className="text-slate-400">{new Date(selectedProject.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+              </div>
+
+              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">{selectedProject.title}</h2>
+
+              <div className="prose prose-invert max-w-none">
+                <p className="text-slate-300 text-lg leading-relaxed whitespace-pre-line">{selectedProject.description}</p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

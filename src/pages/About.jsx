@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { FiMail, FiDownload } from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiMail, FiDownload, FiX, FiArrowRight } from 'react-icons/fi';
 import { supabase } from '../supabase/client';
 import toast from 'react-hot-toast';
 import ProfileCard from '../components/ProfileCard';
 
 export default function About() {
   const [experiences, setExperiences] = useState([]);
+  const [selectedExperience, setSelectedExperience] = useState(null);
   const [skills, setSkills] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -14,7 +15,6 @@ export default function About() {
     nama: 'Muhammad Dias Al Izzat',
     tempat_lahir: 'Gresik',
     tanggal_lahir: '27 Agustus 2005',
-    agama: 'Islam',
     status: 'Mahasiswa',
     alamat: 'Sekargadung, Dukun, Gresik',
   };
@@ -136,17 +136,17 @@ export default function About() {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             {/* Biodata */}
             <motion.div variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-              <div className="glass-effect rounded-2xl p-8 md:p-10">
-                <h2 className="text-3xl font-bold mb-8 flex items-center gap-3">
-                  <div className="w-1 h-8 bg-gradient-to-b from-cyan-500 to-blue-500 rounded" />
+              <div className="glass-effect rounded-2xl p-6">
+                <h2 className="text-2xl font-bold mb-5 flex items-center gap-3">
+                  <div className="w-1 h-6 bg-gradient-to-b from-cyan-500 to-blue-500 rounded" />
                   Personal Info
                 </h2>
 
-                <div className="space-y-6">
+                <div className="space-y-3">
                   {Object.entries(biodata).map(([key, value], index) => (
-                    <motion.div key={key} variants={itemVariants} className="border-b border-white/5 pb-4">
-                      <span className="text-slate-500 text-sm uppercase tracking-wider mb-2 block">{key.replace('_', ' ')}</span>
-                      <span className="text-white text-lg font-semibold">{value}</span>
+                    <motion.div key={key} variants={itemVariants} className="border-b border-white/5 pb-2">
+                      <span className="text-slate-500 text-xs uppercase tracking-wider mb-1 block">{key.replace('_', ' ')}</span>
+                      <span className="text-white text-base font-semibold">{value}</span>
                     </motion.div>
                   ))}
                 </div>
@@ -157,11 +157,7 @@ export default function About() {
                     <FiMail className="w-4 h-4" />
                     Contact Me
                   </a>
-                  <a
-                    href="/CV DPR Fest.jpg" 
-                    download="CV_Muhammad_Dias.jpg"
-                    className="btn-secondary flex items-center justify-center gap-2"
-                  >
+                  <a href="/CV DPR Fest.jpg" download="CV_Muhammad_Dias.jpg" className="btn-secondary flex items-center justify-center gap-2">
                     <FiDownload className="w-4 h-4" />
                     Download CV
                   </a>
@@ -307,6 +303,11 @@ export default function About() {
 
                     {/* Description */}
                     <p className="text-xs text-slate-300 flex-1 line-clamp-3 leading-relaxed">{exp.description}</p>
+
+                    {/* View Details Button */}
+                    <button onClick={() => setSelectedExperience(exp)} className="mt-4 text-cyan-400 text-xs font-medium hover:text-cyan-300 transition-colors flex items-center gap-2 w-fit">
+                      View Details <FiArrowRight />
+                    </button>
                   </div>
                 </motion.div>
               ))}
@@ -318,6 +319,45 @@ export default function About() {
           )}
         </motion.section>
       </div>
+
+      {/* Experience Detail Modal */}
+      <AnimatePresence>
+        {selectedExperience && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedExperience(null)}>
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl p-6 md:p-8 bg-[#0f172a] border border-white/20 shadow-2xl"
+            >
+              <button onClick={() => setSelectedExperience(null)} className="absolute top-4 right-4 p-2 rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors">
+                <FiX size={20} />
+              </button>
+
+              <span className="text-sm font-semibold text-cyan-400 uppercase tracking-wider mb-2 block">
+                {new Date(selectedExperience.start_date).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                })}
+                {selectedExperience.end_date && selectedExperience.end_date !== selectedExperience.start_date
+                  ? ` - ${new Date(selectedExperience.end_date).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                    })}`
+                  : ' - Now'}
+              </span>
+
+              <h2 className="text-2xl md:text-3xl font-bold mb-2 text-white">{selectedExperience.title}</h2>
+              <p className="text-lg text-cyan-300 font-medium mb-6">{selectedExperience.company}</p>
+
+              <div className="prose prose-invert max-w-none">
+                <p className="text-slate-300 leading-relaxed whitespace-pre-line">{selectedExperience.description}</p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

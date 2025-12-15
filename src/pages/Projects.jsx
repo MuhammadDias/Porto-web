@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { FiExternalLink, FiGithub } from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiExternalLink, FiGithub, FiInfo, FiX } from 'react-icons/fi';
 import { supabase } from '../supabase/client';
 import toast from 'react-hot-toast';
 
@@ -9,6 +9,7 @@ export default function Projects() {
   const [filteredProjects, setFilteredProjects] = useState([]);
   const [categories, setCategories] = useState([]);
   const [activeCategory, setActiveCategory] = useState('all');
+  const [selectedProject, setSelectedProject] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -153,6 +154,14 @@ export default function Projects() {
 
                   {/* Links */}
                   <div className="flex gap-3 pt-4 border-t border-white/10">
+                    <button
+                      onClick={() => setSelectedProject(project)}
+                      className="flex items-center justify-center gap-2 flex-1 px-3 py-2 bg-white/5 hover:bg-white/10 
+                               text-slate-300 rounded-lg transition-colors text-sm"
+                    >
+                      <FiInfo className="w-4 h-4" />
+                      Detail
+                    </button>
                     {project.project_url && (
                       <a
                         href={project.project_url}
@@ -165,14 +174,18 @@ export default function Projects() {
                         Live
                       </a>
                     )}
-                    <a
-                      href="#"
-                      className="flex items-center gap-2 flex-1 px-3 py-2 bg-white/5 hover:bg-white/10 
-                               text-slate-300 rounded-lg transition-colors text-sm"
-                    >
-                      <FiGithub className="w-4 h-4" />
-                      Code
-                    </a>
+                    {project.code && (
+                      <a
+                        href={project.code}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 flex-1 px-3 py-2 bg-white/5 hover:bg-white/10 
+                                 text-slate-300 rounded-lg transition-colors text-sm"
+                      >
+                        <FiGithub className="w-4 h-4" />
+                        Code
+                      </a>
+                    )}
                   </div>
                 </div>
               </motion.div>
@@ -186,6 +199,67 @@ export default function Projects() {
           </motion.div>
         )}
       </div>
+
+      {/* Project Detail Modal */}
+      <AnimatePresence>
+        {selectedProject && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedProject(null)}>
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl p-6 md:p-8 border border-white/10 bg-[#0f172a] shadow-2xl"
+            >
+              <button onClick={() => setSelectedProject(null)} className="absolute top-4 right-4 p-2 rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors z-10">
+                <FiX size={24} />
+              </button>
+
+              <div className="aspect-video w-full rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 mb-6 overflow-hidden relative">
+                {selectedProject.image_url ? (
+                  <img src={selectedProject.image_url} alt={selectedProject.title} className="absolute inset-0 w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-6xl">📦</div>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-4 mb-6">
+                <span className="px-4 py-1.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-medium">{selectedProject.category}</span>
+                <span className="text-slate-400">{new Date(selectedProject.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+              </div>
+
+              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">{selectedProject.title}</h2>
+
+              <div className="prose prose-invert max-w-none mb-8">
+                <p className="text-slate-300 text-lg leading-relaxed whitespace-pre-line">{selectedProject.description}</p>
+              </div>
+
+              {selectedProject.tags && (
+                <div className="flex flex-wrap gap-2 mb-8">
+                  {(typeof selectedProject.tags === 'string' ? selectedProject.tags.split(',') : Array.isArray(selectedProject.tags) ? selectedProject.tags : []).map((tag, i) => (
+                    <span key={i} className="text-sm px-3 py-1 rounded-full bg-white/5 text-slate-300 border border-white/10">
+                      {typeof tag === 'string' ? tag.trim() : tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-4">
+                {selectedProject.project_url && (
+                  <a href={selectedProject.project_url} target="_blank" rel="noopener noreferrer" className="btn-primary flex items-center gap-2 px-6 py-2 rounded-lg">
+                    <FiExternalLink /> View Live Project
+                  </a>
+                )}
+                {selectedProject.code && (
+                  <a href={selectedProject.code} target="_blank" rel="noopener noreferrer" className="px-6 py-2 rounded-lg border border-white/10 hover:bg-white/5 transition-colors flex items-center gap-2 text-white">
+                    <FiGithub /> View Code
+                  </a>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -1,15 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '../supabase/client';
-import { 
-  FiPlus, 
-  FiEdit, 
-  FiTrash2, 
-  FiUpload,
-  FiLogOut,
-  FiSave,
-  FiX
-} from 'react-icons/fi';
+import { FiPlus, FiEdit, FiTrash2, FiUpload, FiLogOut, FiSave, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 const AdminDashboard = () => {
@@ -27,6 +19,7 @@ const AdminDashboard = () => {
     description: '',
     image_url: '',
     project_url: '',
+    code: '',
     tags: '',
   });
 
@@ -78,16 +71,16 @@ const AdminDashboard = () => {
     try {
       const projectData = {
         ...projectForm,
-        tags: JSON.stringify(projectForm.tags.split(',').map(tag => tag.trim())),
+        image_url: projectForm.image_url || null,
+        project_url: projectForm.project_url || null,
+        code: projectForm.code || null,
+        tags: JSON.stringify(projectForm.tags.split(',').map((tag) => tag.trim())),
         created_at: new Date().toISOString(),
       };
 
       if (editingItem) {
-        const { error } = await supabase
-          .from('projects')
-          .update(projectData)
-          .eq('id', editingItem);
-        
+        const { error } = await supabase.from('projects').update(projectData).eq('id', editingItem);
+
         if (error) throw error;
         toast.success('Project updated successfully');
       } else {
@@ -102,6 +95,7 @@ const AdminDashboard = () => {
         description: '',
         image_url: '',
         project_url: '',
+        code: '',
         tags: '',
       });
       setEditingItem(null);
@@ -118,16 +112,19 @@ const AdminDashboard = () => {
     setLoading(true);
 
     try {
+      // Prepare payload: handle end_date logic
+      const experienceData = {
+        ...experienceForm,
+        end_date: experienceForm.current ? null : experienceForm.end_date || null,
+      };
+
       if (editingItem) {
-        const { error } = await supabase
-          .from('experiences')
-          .update(experienceForm)
-          .eq('id', editingItem);
-        
+        const { error } = await supabase.from('experiences').update(experienceData).eq('id', editingItem);
+
         if (error) throw error;
         toast.success('Experience updated successfully');
       } else {
-        const { error } = await supabase.from('experiences').insert([experienceForm]);
+        const { error } = await supabase.from('experiences').insert([experienceData]);
         if (error) throw error;
         toast.success('Experience added successfully');
       }
@@ -155,11 +152,8 @@ const AdminDashboard = () => {
 
     try {
       if (editingItem) {
-        const { error } = await supabase
-          .from('skills')
-          .update(skillForm)
-          .eq('id', editingItem);
-        
+        const { error } = await supabase.from('skills').update(skillForm).eq('id', editingItem);
+
         if (error) throw error;
         toast.success('Skill updated successfully');
       } else {
@@ -220,20 +214,16 @@ const AdminDashboard = () => {
                 <tr key={project.id} className="border-b border-white/5 hover:bg-white/5">
                   <td className="py-3 px-4">{project.title}</td>
                   <td className="py-3 px-4">
-                    <span className="px-2 py-1 text-xs rounded-full bg-cyan-500/10 text-cyan-400">
-                      {project.category}
-                    </span>
+                    <span className="px-2 py-1 text-xs rounded-full bg-cyan-500/10 text-cyan-400">{project.category}</span>
                   </td>
-                  <td className="py-3 px-4 text-slate-400">
-                    {new Date(project.created_at).toLocaleDateString()}
-                  </td>
+                  <td className="py-3 px-4 text-slate-400">{new Date(project.created_at).toLocaleDateString()}</td>
                   <td className="py-3 px-4">
                     <div className="flex space-x-2">
                       <button
                         onClick={() => {
                           setProjectForm({
                             ...project,
-                            tags: JSON.parse(project.tags || '[]').join(', ')
+                            tags: JSON.parse(project.tags || '[]').join(', '),
                           });
                           setEditingItem(project.id);
                         }}
@@ -241,10 +231,7 @@ const AdminDashboard = () => {
                       >
                         <FiEdit />
                       </button>
-                      <button
-                        onClick={() => handleDelete('projects', project.id)}
-                        className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
-                      >
+                      <button onClick={() => handleDelete('projects', project.id)} className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors">
                         <FiTrash2 />
                       </button>
                     </div>
@@ -288,10 +275,7 @@ const AdminDashboard = () => {
                       >
                         <FiEdit />
                       </button>
-                      <button
-                        onClick={() => handleDelete('experiences', exp.id)}
-                        className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
-                      >
+                      <button onClick={() => handleDelete('experiences', exp.id)} className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors">
                         <FiTrash2 />
                       </button>
                     </div>
@@ -327,16 +311,11 @@ const AdminDashboard = () => {
                   </td>
                   <td className="py-3 px-4">
                     <div className="w-32 bg-slate-700 rounded-full h-2">
-                      <div 
-                        className="h-2 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500"
-                        style={{ width: `${skill.level}%` }}
-                      />
+                      <div className="h-2 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500" style={{ width: `${skill.level}%` }} />
                     </div>
                   </td>
                   <td className="py-3 px-4">
-                    <span className="px-2 py-1 text-xs rounded-full bg-white/5">
-                      {skill.category}
-                    </span>
+                    <span className="px-2 py-1 text-xs rounded-full bg-white/5">{skill.category}</span>
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex space-x-2">
@@ -349,10 +328,7 @@ const AdminDashboard = () => {
                       >
                         <FiEdit />
                       </button>
-                      <button
-                        onClick={() => handleDelete('skills', skill.id)}
-                        className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
-                      >
+                      <button onClick={() => handleDelete('skills', skill.id)} className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors">
                         <FiTrash2 />
                       </button>
                     </div>
@@ -377,7 +353,7 @@ const AdminDashboard = () => {
                 type="text"
                 required
                 value={projectForm.title}
-                onChange={(e) => setProjectForm({...projectForm, title: e.target.value})}
+                onChange={(e) => setProjectForm({ ...projectForm, title: e.target.value })}
                 className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
               />
             </div>
@@ -385,7 +361,7 @@ const AdminDashboard = () => {
               <label className="block text-sm font-medium mb-2">Category</label>
               <select
                 value={projectForm.category}
-                onChange={(e) => setProjectForm({...projectForm, category: e.target.value})}
+                onChange={(e) => setProjectForm({ ...projectForm, category: e.target.value })}
                 className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
               >
                 <option value="web-design">Web Design</option>
@@ -401,7 +377,7 @@ const AdminDashboard = () => {
             <textarea
               required
               value={projectForm.description}
-              onChange={(e) => setProjectForm({...projectForm, description: e.target.value})}
+              onChange={(e) => setProjectForm({ ...projectForm, description: e.target.value })}
               rows="3"
               className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
             />
@@ -412,8 +388,8 @@ const AdminDashboard = () => {
               <label className="block text-sm font-medium mb-2">Image URL</label>
               <input
                 type="url"
-                value={projectForm.image_url}
-                onChange={(e) => setProjectForm({...projectForm, image_url: e.target.value})}
+                value={projectForm.image_url || ''}
+                onChange={(e) => setProjectForm({ ...projectForm, image_url: e.target.value })}
                 className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
               />
             </div>
@@ -421,11 +397,21 @@ const AdminDashboard = () => {
               <label className="block text-sm font-medium mb-2">Project URL</label>
               <input
                 type="url"
-                value={projectForm.project_url}
-                onChange={(e) => setProjectForm({...projectForm, project_url: e.target.value})}
+                value={projectForm.project_url || ''}
+                onChange={(e) => setProjectForm({ ...projectForm, project_url: e.target.value })}
                 className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Code / Repository URL</label>
+            <input
+              type="url"
+              value={projectForm.code || ''}
+              onChange={(e) => setProjectForm({ ...projectForm, code: e.target.value })}
+              className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
+            />
           </div>
 
           <div>
@@ -433,7 +419,7 @@ const AdminDashboard = () => {
             <input
               type="text"
               value={projectForm.tags}
-              onChange={(e) => setProjectForm({...projectForm, tags: e.target.value})}
+              onChange={(e) => setProjectForm({ ...projectForm, tags: e.target.value })}
               className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
               placeholder="React, Design, Animation"
             />
@@ -451,6 +437,7 @@ const AdminDashboard = () => {
                     description: '',
                     image_url: '',
                     project_url: '',
+                    code: '',
                     tags: '',
                   });
                 }}
@@ -460,11 +447,7 @@ const AdminDashboard = () => {
                 Cancel
               </button>
             )}
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary px-6 py-2"
-            >
+            <button type="submit" disabled={loading} className="btn-primary px-6 py-2">
               <FiSave className="inline mr-2" />
               {editingItem ? 'Update Project' : 'Add Project'}
             </button>
@@ -483,7 +466,7 @@ const AdminDashboard = () => {
                 type="text"
                 required
                 value={experienceForm.title}
-                onChange={(e) => setExperienceForm({...experienceForm, title: e.target.value})}
+                onChange={(e) => setExperienceForm({ ...experienceForm, title: e.target.value })}
                 className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
               />
             </div>
@@ -493,7 +476,7 @@ const AdminDashboard = () => {
                 type="text"
                 required
                 value={experienceForm.company}
-                onChange={(e) => setExperienceForm({...experienceForm, company: e.target.value})}
+                onChange={(e) => setExperienceForm({ ...experienceForm, company: e.target.value })}
                 className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
               />
             </div>
@@ -506,7 +489,7 @@ const AdminDashboard = () => {
                 type="date"
                 required
                 value={experienceForm.start_date}
-                onChange={(e) => setExperienceForm({...experienceForm, start_date: e.target.value})}
+                onChange={(e) => setExperienceForm({ ...experienceForm, start_date: e.target.value })}
                 className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
               />
             </div>
@@ -515,7 +498,7 @@ const AdminDashboard = () => {
               <input
                 type="date"
                 value={experienceForm.end_date}
-                onChange={(e) => setExperienceForm({...experienceForm, end_date: e.target.value})}
+                onChange={(e) => setExperienceForm({ ...experienceForm, end_date: e.target.value })}
                 disabled={experienceForm.current}
                 className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none disabled:opacity-50"
               />
@@ -524,10 +507,18 @@ const AdminDashboard = () => {
                   type="checkbox"
                   id="current"
                   checked={experienceForm.current}
-                  onChange={(e) => setExperienceForm({...experienceForm, current: e.target.checked})}
+                  onChange={(e) =>
+                    setExperienceForm({
+                      ...experienceForm,
+                      current: e.target.checked,
+                      end_date: e.target.checked ? '' : experienceForm.end_date,
+                    })
+                  }
                   className="mr-2"
                 />
-                <label htmlFor="current" className="text-sm">I currently work here</label>
+                <label htmlFor="current" className="text-sm">
+                  I currently work here
+                </label>
               </div>
             </div>
           </div>
@@ -537,7 +528,7 @@ const AdminDashboard = () => {
             <textarea
               required
               value={experienceForm.description}
-              onChange={(e) => setExperienceForm({...experienceForm, description: e.target.value})}
+              onChange={(e) => setExperienceForm({ ...experienceForm, description: e.target.value })}
               rows="3"
               className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
             />
@@ -564,11 +555,7 @@ const AdminDashboard = () => {
                 Cancel
               </button>
             )}
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary px-6 py-2"
-            >
+            <button type="submit" disabled={loading} className="btn-primary px-6 py-2">
               <FiSave className="inline mr-2" />
               {editingItem ? 'Update Experience' : 'Add Experience'}
             </button>
@@ -587,20 +574,13 @@ const AdminDashboard = () => {
                 type="text"
                 required
                 value={skillForm.name}
-                onChange={(e) => setSkillForm({...skillForm, name: e.target.value})}
+                onChange={(e) => setSkillForm({ ...skillForm, name: e.target.value })}
                 className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
               />
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">Level (%)</label>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={skillForm.level}
-                onChange={(e) => setSkillForm({...skillForm, level: e.target.value})}
-                className="w-full"
-              />
+              <input type="range" min="0" max="100" value={skillForm.level} onChange={(e) => setSkillForm({ ...skillForm, level: e.target.value })} className="w-full" />
               <div className="text-center text-sm text-slate-400">{skillForm.level}%</div>
             </div>
           </div>
@@ -610,7 +590,7 @@ const AdminDashboard = () => {
               <label className="block text-sm font-medium mb-2">Category</label>
               <select
                 value={skillForm.category}
-                onChange={(e) => setSkillForm({...skillForm, category: e.target.value})}
+                onChange={(e) => setSkillForm({ ...skillForm, category: e.target.value })}
                 className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
               >
                 <option value="frontend">Frontend</option>
@@ -624,7 +604,7 @@ const AdminDashboard = () => {
               <input
                 type="text"
                 value={skillForm.icon}
-                onChange={(e) => setSkillForm({...skillForm, icon: e.target.value})}
+                onChange={(e) => setSkillForm({ ...skillForm, icon: e.target.value })}
                 className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
                 maxLength="2"
               />
@@ -636,7 +616,7 @@ const AdminDashboard = () => {
             <input
               type="number"
               value={skillForm.order}
-              onChange={(e) => setSkillForm({...skillForm, order: e.target.value})}
+              onChange={(e) => setSkillForm({ ...skillForm, order: e.target.value })}
               className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
             />
           </div>
@@ -661,11 +641,7 @@ const AdminDashboard = () => {
                 Cancel
               </button>
             )}
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary px-6 py-2"
-            >
+            <button type="submit" disabled={loading} className="btn-primary px-6 py-2">
               <FiSave className="inline mr-2" />
               {editingItem ? 'Update Skill' : 'Add Skill'}
             </button>
@@ -683,10 +659,7 @@ const AdminDashboard = () => {
             <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
             <p className="text-slate-400">Manage your portfolio content</p>
           </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center px-4 py-2 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
-          >
+          <button onClick={handleLogout} className="flex items-center px-4 py-2 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors">
             <FiLogOut className="mr-2" />
             Logout
           </button>
@@ -698,11 +671,7 @@ const AdminDashboard = () => {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-                activeTab === tab
-                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white'
-                  : 'glass-effect text-slate-300 hover:text-cyan-400'
-              }`}
+              className={`px-6 py-3 rounded-lg font-medium transition-colors ${activeTab === tab ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white' : 'glass-effect text-slate-300 hover:text-cyan-400'}`}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
@@ -711,35 +680,21 @@ const AdminDashboard = () => {
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Form Section */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="lg:col-span-1"
-          >
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-1">
             <div className="glass-effect rounded-2xl p-6 sticky top-24">
-              <h2 className="text-xl font-semibold mb-6">
-                {editingItem ? `Edit ${activeTab.slice(0, -1)}` : `Add New ${activeTab.slice(0, -1)}`}
-              </h2>
+              <h2 className="text-xl font-semibold mb-6">{editingItem ? `Edit ${activeTab.slice(0, -1)}` : `Add New ${activeTab.slice(0, -1)}`}</h2>
               {renderForm()}
             </div>
           </motion.div>
 
           {/* Table Section */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="lg:col-span-2"
-          >
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-2">
             <div className="glass-effect rounded-2xl p-6">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold">
-                  All {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
-                </h2>
-                <span className="text-slate-400">
-                  {loading ? 'Loading...' : `${activeTab === 'projects' ? projects.length : activeTab === 'experiences' ? experiences.length : skills.length} items`}
-                </span>
+                <h2 className="text-xl font-semibold">All {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h2>
+                <span className="text-slate-400">{loading ? 'Loading...' : `${activeTab === 'projects' ? projects.length : activeTab === 'experiences' ? experiences.length : skills.length} items`}</span>
               </div>
-              
+
               {loading ? (
                 <div className="space-y-4">
                   {[...Array(5)].map((_, i) => (
