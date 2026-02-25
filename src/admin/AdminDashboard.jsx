@@ -1,8 +1,49 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
+import { FiEdit, FiLogOut, FiSave, FiTrash2, FiX } from 'react-icons/fi';
 import { supabase } from '../supabase/client';
-import { FiPlus, FiEdit, FiTrash2, FiUpload, FiLogOut, FiSave, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+
+const defaultProjectForm = {
+  title: '',
+  category: 'web-design',
+  description: '',
+  image_url: '',
+  project_url: '',
+  code: '',
+  tags: '',
+};
+
+const defaultExperienceForm = {
+  title: '',
+  company: '',
+  start_date: '',
+  end_date: '',
+  description: '',
+  current: false,
+};
+
+const defaultSkillForm = {
+  name: '',
+  level: 80,
+  category: 'frontend',
+  icon: '*',
+  order: 0,
+};
+
+const parseTagsToText = (tags) => {
+  if (!tags) return '';
+  if (Array.isArray(tags)) return tags.join(', ');
+  if (typeof tags === 'string') {
+    try {
+      const parsed = JSON.parse(tags);
+      if (Array.isArray(parsed)) return parsed.join(', ');
+      return tags;
+    } catch (error) {
+      return tags;
+    }
+  }
+  return '';
+};
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('projects');
@@ -11,34 +52,9 @@ const AdminDashboard = () => {
   const [skills, setSkills] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
-
-  // Form states
-  const [projectForm, setProjectForm] = useState({
-    title: '',
-    category: 'web-design',
-    description: '',
-    image_url: '',
-    project_url: '',
-    code: '',
-    tags: '',
-  });
-
-  const [experienceForm, setExperienceForm] = useState({
-    title: '',
-    company: '',
-    start_date: '',
-    end_date: '',
-    description: '',
-    current: false,
-  });
-
-  const [skillForm, setSkillForm] = useState({
-    name: '',
-    level: 80,
-    category: 'frontend',
-    icon: '💻',
-    order: 0,
-  });
+  const [projectForm, setProjectForm] = useState(defaultProjectForm);
+  const [experienceForm, setExperienceForm] = useState(defaultExperienceForm);
+  const [skillForm, setSkillForm] = useState(defaultSkillForm);
 
   useEffect(() => {
     fetchData();
@@ -53,7 +69,7 @@ const AdminDashboard = () => {
       } else if (activeTab === 'experiences') {
         const { data } = await supabase.from('experiences').select('*').order('start_date', { ascending: false });
         setExperiences(data || []);
-      } else if (activeTab === 'skills') {
+      } else {
         const { data } = await supabase.from('skills').select('*').order('order', { ascending: true });
         setSkills(data || []);
       }
@@ -64,130 +80,101 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleProjectSubmit = async (e) => {
-    e.preventDefault();
+  const handleProjectSubmit = async (event) => {
+    event.preventDefault();
     setLoading(true);
-
     try {
       const projectData = {
         ...projectForm,
         image_url: projectForm.image_url || null,
         project_url: projectForm.project_url || null,
         code: projectForm.code || null,
-        tags: JSON.stringify(projectForm.tags.split(',').map((tag) => tag.trim())),
-        created_at: new Date().toISOString(),
+        tags: JSON.stringify(projectForm.tags.split(',').map((tag) => tag.trim()).filter(Boolean)),
+        created_at: editingItem ? undefined : new Date().toISOString(),
       };
 
       if (editingItem) {
         const { error } = await supabase.from('projects').update(projectData).eq('id', editingItem);
-
         if (error) throw error;
-        toast.success('Project updated successfully');
+        toast.success('Project updated');
       } else {
         const { error } = await supabase.from('projects').insert([projectData]);
         if (error) throw error;
-        toast.success('Project added successfully');
+        toast.success('Project added');
       }
 
-      setProjectForm({
-        title: '',
-        category: 'web-design',
-        description: '',
-        image_url: '',
-        project_url: '',
-        code: '',
-        tags: '',
-      });
+      setProjectForm(defaultProjectForm);
       setEditingItem(null);
       fetchData();
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.message || 'Failed to save project');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleExperienceSubmit = async (e) => {
-    e.preventDefault();
+  const handleExperienceSubmit = async (event) => {
+    event.preventDefault();
     setLoading(true);
-
     try {
-      // Prepare payload: handle end_date logic
-      const experienceData = {
+      const payload = {
         ...experienceForm,
         end_date: experienceForm.current ? null : experienceForm.end_date || null,
       };
 
       if (editingItem) {
-        const { error } = await supabase.from('experiences').update(experienceData).eq('id', editingItem);
-
+        const { error } = await supabase.from('experiences').update(payload).eq('id', editingItem);
         if (error) throw error;
-        toast.success('Experience updated successfully');
+        toast.success('Experience updated');
       } else {
-        const { error } = await supabase.from('experiences').insert([experienceData]);
+        const { error } = await supabase.from('experiences').insert([payload]);
         if (error) throw error;
-        toast.success('Experience added successfully');
+        toast.success('Experience added');
       }
 
-      setExperienceForm({
-        title: '',
-        company: '',
-        start_date: '',
-        end_date: '',
-        description: '',
-        current: false,
-      });
+      setExperienceForm(defaultExperienceForm);
       setEditingItem(null);
       fetchData();
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.message || 'Failed to save experience');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSkillSubmit = async (e) => {
-    e.preventDefault();
+  const handleSkillSubmit = async (event) => {
+    event.preventDefault();
     setLoading(true);
-
     try {
       if (editingItem) {
         const { error } = await supabase.from('skills').update(skillForm).eq('id', editingItem);
-
         if (error) throw error;
-        toast.success('Skill updated successfully');
+        toast.success('Skill updated');
       } else {
         const { error } = await supabase.from('skills').insert([skillForm]);
         if (error) throw error;
-        toast.success('Skill added successfully');
+        toast.success('Skill added');
       }
 
-      setSkillForm({
-        name: '',
-        level: 80,
-        category: 'frontend',
-        icon: '💻',
-        order: 0,
-      });
+      setSkillForm(defaultSkillForm);
       setEditingItem(null);
       fetchData();
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.message || 'Failed to save skill');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (table, id) => {
-    if (!window.confirm('Are you sure you want to delete this item?')) return;
-
+    if (!window.confirm('Delete this item?')) return;
     try {
       const { error } = await supabase.from(table).delete().eq('id', id);
       if (error) throw error;
-      toast.success('Item deleted successfully');
+      toast.success('Item deleted');
       fetchData();
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.message || 'Delete failed');
     }
   };
 
@@ -196,516 +183,264 @@ const AdminDashboard = () => {
     window.location.href = '/';
   };
 
-  const renderTable = () => {
-    if (activeTab === 'projects') {
-      return (
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-white/10">
-                <th className="py-3 px-4 text-left">Title</th>
-                <th className="py-3 px-4 text-left">Category</th>
-                <th className="py-3 px-4 text-left">Date</th>
-                <th className="py-3 px-4 text-left">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {projects.map((project) => (
-                <tr key={project.id} className="border-b border-white/5 hover:bg-white/5">
-                  <td className="py-3 px-4">{project.title}</td>
-                  <td className="py-3 px-4">
-                    <span className="px-2 py-1 text-xs rounded-full bg-cyan-500/10 text-cyan-400">{project.category}</span>
-                  </td>
-                  <td className="py-3 px-4 text-slate-400">{new Date(project.created_at).toLocaleDateString()}</td>
-                  <td className="py-3 px-4">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => {
-                          setProjectForm({
-                            ...project,
-                            tags: JSON.parse(project.tags || '[]').join(', '),
-                          });
-                          setEditingItem(project.id);
-                        }}
-                        className="p-2 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"
-                      >
-                        <FiEdit />
-                      </button>
-                      <button onClick={() => handleDelete('projects', project.id)} className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors">
-                        <FiTrash2 />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      );
-    }
-
-    if (activeTab === 'experiences') {
-      return (
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-white/10">
-                <th className="py-3 px-4 text-left">Title</th>
-                <th className="py-3 px-4 text-left">Company</th>
-                <th className="py-3 px-4 text-left">Period</th>
-                <th className="py-3 px-4 text-left">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {experiences.map((exp) => (
-                <tr key={exp.id} className="border-b border-white/5 hover:bg-white/5">
-                  <td className="py-3 px-4">{exp.title}</td>
-                  <td className="py-3 px-4">{exp.company}</td>
-                  <td className="py-3 px-4 text-slate-400">
-                    {exp.start_date} - {exp.current ? 'Present' : exp.end_date}
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => {
-                          setExperienceForm(exp);
-                          setEditingItem(exp.id);
-                        }}
-                        className="p-2 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"
-                      >
-                        <FiEdit />
-                      </button>
-                      <button onClick={() => handleDelete('experiences', exp.id)} className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors">
-                        <FiTrash2 />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      );
-    }
-
-    if (activeTab === 'skills') {
-      return (
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-white/10">
-                <th className="py-3 px-4 text-left">Skill</th>
-                <th className="py-3 px-4 text-left">Level</th>
-                <th className="py-3 px-4 text-left">Category</th>
-                <th className="py-3 px-4 text-left">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {skills.map((skill) => (
-                <tr key={skill.id} className="border-b border-white/5 hover:bg-white/5">
-                  <td className="py-3 px-4">
-                    <div className="flex items-center">
-                      <span className="mr-2">{skill.icon}</span>
-                      {skill.name}
-                    </div>
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="w-32 bg-slate-700 rounded-full h-2">
-                      <div className="h-2 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500" style={{ width: `${skill.level}%` }} />
-                    </div>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="px-2 py-1 text-xs rounded-full bg-white/5">{skill.category}</span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => {
-                          setSkillForm(skill);
-                          setEditingItem(skill.id);
-                        }}
-                        className="p-2 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"
-                      >
-                        <FiEdit />
-                      </button>
-                      <button onClick={() => handleDelete('skills', skill.id)} className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors">
-                        <FiTrash2 />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      );
-    }
+  const resetCurrentForm = () => {
+    setEditingItem(null);
+    if (activeTab === 'projects') setProjectForm(defaultProjectForm);
+    if (activeTab === 'experiences') setExperienceForm(defaultExperienceForm);
+    if (activeTab === 'skills') setSkillForm(defaultSkillForm);
   };
 
-  const renderForm = () => {
-    if (activeTab === 'projects') {
-      return (
-        <form onSubmit={handleProjectSubmit} className="space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Title</label>
-              <input
-                type="text"
-                required
-                value={projectForm.title}
-                onChange={(e) => setProjectForm({ ...projectForm, title: e.target.value })}
-                className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Category</label>
-              <select
-                value={projectForm.category}
-                onChange={(e) => setProjectForm({ ...projectForm, category: e.target.value })}
-                className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
-              >
-                <option value="web-design">Web Design</option>
-                <option value="graphic-design">Graphic Design</option>
-                <option value="motion-graphic">Motion Graphic</option>
-                <option value="videography">Videography</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Description</label>
-            <textarea
-              required
-              value={projectForm.description}
-              onChange={(e) => setProjectForm({ ...projectForm, description: e.target.value })}
-              rows="3"
-              className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
-            />
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Image URL</label>
-              <input
-                type="url"
-                value={projectForm.image_url || ''}
-                onChange={(e) => setProjectForm({ ...projectForm, image_url: e.target.value })}
-                className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Project URL</label>
-              <input
-                type="url"
-                value={projectForm.project_url || ''}
-                onChange={(e) => setProjectForm({ ...projectForm, project_url: e.target.value })}
-                className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Code / Repository URL</label>
-            <input
-              type="url"
-              value={projectForm.code || ''}
-              onChange={(e) => setProjectForm({ ...projectForm, code: e.target.value })}
-              className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Tags (comma separated)</label>
-            <input
-              type="text"
-              value={projectForm.tags}
-              onChange={(e) => setProjectForm({ ...projectForm, tags: e.target.value })}
-              className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
-              placeholder="React, Design, Animation"
-            />
-          </div>
-
-          <div className="flex justify-end space-x-3 pt-4">
-            {editingItem && (
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingItem(null);
-                  setProjectForm({
-                    title: '',
-                    category: 'web-design',
-                    description: '',
-                    image_url: '',
-                    project_url: '',
-                    code: '',
-                    tags: '',
-                  });
-                }}
-                className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5 transition-colors"
-              >
-                <FiX className="inline mr-2" />
-                Cancel
-              </button>
-            )}
-            <button type="submit" disabled={loading} className="btn-primary px-6 py-2">
-              <FiSave className="inline mr-2" />
-              {editingItem ? 'Update Project' : 'Add Project'}
-            </button>
-          </div>
-        </form>
-      );
-    }
-
-    if (activeTab === 'experiences') {
-      return (
-        <form onSubmit={handleExperienceSubmit} className="space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Title</label>
-              <input
-                type="text"
-                required
-                value={experienceForm.title}
-                onChange={(e) => setExperienceForm({ ...experienceForm, title: e.target.value })}
-                className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Company</label>
-              <input
-                type="text"
-                required
-                value={experienceForm.company}
-                onChange={(e) => setExperienceForm({ ...experienceForm, company: e.target.value })}
-                className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Start Date</label>
-              <input
-                type="date"
-                required
-                value={experienceForm.start_date}
-                onChange={(e) => setExperienceForm({ ...experienceForm, start_date: e.target.value })}
-                className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">End Date</label>
-              <input
-                type="date"
-                value={experienceForm.end_date}
-                onChange={(e) => setExperienceForm({ ...experienceForm, end_date: e.target.value })}
-                disabled={experienceForm.current}
-                className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none disabled:opacity-50"
-              />
-              <div className="mt-2 flex items-center">
-                <input
-                  type="checkbox"
-                  id="current"
-                  checked={experienceForm.current}
-                  onChange={(e) =>
-                    setExperienceForm({
-                      ...experienceForm,
-                      current: e.target.checked,
-                      end_date: e.target.checked ? '' : experienceForm.end_date,
-                    })
-                  }
-                  className="mr-2"
-                />
-                <label htmlFor="current" className="text-sm">
-                  I currently work here
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Description</label>
-            <textarea
-              required
-              value={experienceForm.description}
-              onChange={(e) => setExperienceForm({ ...experienceForm, description: e.target.value })}
-              rows="3"
-              className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
-            />
-          </div>
-
-          <div className="flex justify-end space-x-3 pt-4">
-            {editingItem && (
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingItem(null);
-                  setExperienceForm({
-                    title: '',
-                    company: '',
-                    start_date: '',
-                    end_date: '',
-                    description: '',
-                    current: false,
-                  });
-                }}
-                className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5 transition-colors"
-              >
-                <FiX className="inline mr-2" />
-                Cancel
-              </button>
-            )}
-            <button type="submit" disabled={loading} className="btn-primary px-6 py-2">
-              <FiSave className="inline mr-2" />
-              {editingItem ? 'Update Experience' : 'Add Experience'}
-            </button>
-          </div>
-        </form>
-      );
-    }
-
-    if (activeTab === 'skills') {
-      return (
-        <form onSubmit={handleSkillSubmit} className="space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Skill Name</label>
-              <input
-                type="text"
-                required
-                value={skillForm.name}
-                onChange={(e) => setSkillForm({ ...skillForm, name: e.target.value })}
-                className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Level (%)</label>
-              <input type="range" min="0" max="100" value={skillForm.level} onChange={(e) => setSkillForm({ ...skillForm, level: e.target.value })} className="w-full" />
-              <div className="text-center text-sm text-slate-400">{skillForm.level}%</div>
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Category</label>
-              <select
-                value={skillForm.category}
-                onChange={(e) => setSkillForm({ ...skillForm, category: e.target.value })}
-                className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
-              >
-                <option value="frontend">Frontend</option>
-                <option value="backend">Backend</option>
-                <option value="design">Design</option>
-                <option value="tools">Tools</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Icon (Emoji)</label>
-              <input
-                type="text"
-                value={skillForm.icon}
-                onChange={(e) => setSkillForm({ ...skillForm, icon: e.target.value })}
-                className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
-                maxLength="2"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Display Order</label>
-            <input
-              type="number"
-              value={skillForm.order}
-              onChange={(e) => setSkillForm({ ...skillForm, order: e.target.value })}
-              className="w-full px-4 py-2 rounded-lg glass-effect border border-white/10 focus:border-cyan-500 focus:outline-none"
-            />
-          </div>
-
-          <div className="flex justify-end space-x-3 pt-4">
-            {editingItem && (
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingItem(null);
-                  setSkillForm({
-                    name: '',
-                    level: 80,
-                    category: 'frontend',
-                    icon: '💻',
-                    order: 0,
-                  });
-                }}
-                className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5 transition-colors"
-              >
-                <FiX className="inline mr-2" />
-                Cancel
-              </button>
-            )}
-            <button type="submit" disabled={loading} className="btn-primary px-6 py-2">
-              <FiSave className="inline mr-2" />
-              {editingItem ? 'Update Skill' : 'Add Skill'}
-            </button>
-          </div>
-        </form>
-      );
-    }
-  };
+  const count = activeTab === 'projects' ? projects.length : activeTab === 'experiences' ? experiences.length : skills.length;
 
   return (
-    <div className="pt-20">
-      <div className="container mx-auto px-4 md:px-8 py-8">
-        <div className="flex justify-between items-center mb-8">
+    <div className="pb-10 pt-10">
+      <div className="container mx-auto px-4 md:px-8">
+        <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
-            <p className="text-slate-400">Manage your portfolio content</p>
+            <h1 className="text-3xl font-semibold text-white">Admin Dashboard</h1>
+            <p className="text-sm text-slate-400">Manage portfolio content</p>
           </div>
-          <button onClick={handleLogout} className="flex items-center px-4 py-2 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors">
-            <FiLogOut className="mr-2" />
-            Logout
+          <button onClick={handleLogout} className="btn-outline text-red-400 hover:border-red-400 hover:text-red-300">
+            <FiLogOut className="h-4 w-4" /> Logout
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex space-x-2 mb-8">
+        <div className="mb-6 flex flex-wrap gap-2">
           {['projects', 'experiences', 'skills'].map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-6 py-3 rounded-lg font-medium transition-colors ${activeTab === tab ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white' : 'glass-effect text-slate-300 hover:text-cyan-400'}`}
+              onClick={() => {
+                setActiveTab(tab);
+                setEditingItem(null);
+              }}
+              className={`rounded-lg px-4 py-2 text-sm font-medium ${activeTab === tab ? 'bg-white text-slate-950' : 'border border-slate-700 text-slate-300 hover:bg-slate-900'}`}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
           ))}
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Form Section */}
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-1">
-            <div className="glass-effect rounded-2xl p-6 sticky top-24">
-              <h2 className="text-xl font-semibold mb-6">{editingItem ? `Edit ${activeTab.slice(0, -1)}` : `Add New ${activeTab.slice(0, -1)}`}</h2>
-              {renderForm()}
-            </div>
-          </motion.div>
+        <div className="grid gap-6 lg:grid-cols-3">
+          <section className="surface p-6 lg:col-span-1">
+            <h2 className="mb-4 text-lg font-semibold text-white">{editingItem ? `Edit ${activeTab.slice(0, -1)}` : `Add ${activeTab.slice(0, -1)}`}</h2>
 
-          {/* Table Section */}
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-2">
-            <div className="glass-effect rounded-2xl p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold">All {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h2>
-                <span className="text-slate-400">{loading ? 'Loading...' : `${activeTab === 'projects' ? projects.length : activeTab === 'experiences' ? experiences.length : skills.length} items`}</span>
-              </div>
-
-              {loading ? (
-                <div className="space-y-4">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="h-12 bg-slate-700/50 rounded-lg animate-pulse" />
-                  ))}
+            {activeTab === 'projects' && (
+              <form onSubmit={handleProjectSubmit} className="space-y-3">
+                <input type="text" required value={projectForm.title} onChange={(event) => setProjectForm({ ...projectForm, title: event.target.value })} placeholder="Title" className="input-base" />
+                <select value={projectForm.category} onChange={(event) => setProjectForm({ ...projectForm, category: event.target.value })} className="input-base">
+                  <option value="web-design">Web Design</option>
+                  <option value="graphic-design">Graphic Design</option>
+                  <option value="motion-graphic">Motion Graphic</option>
+                  <option value="videography">Videography</option>
+                </select>
+                <textarea required rows="3" value={projectForm.description} onChange={(event) => setProjectForm({ ...projectForm, description: event.target.value })} placeholder="Description" className="input-base resize-none" />
+                <input type="url" value={projectForm.image_url || ''} onChange={(event) => setProjectForm({ ...projectForm, image_url: event.target.value })} placeholder="Image URL" className="input-base" />
+                <input type="url" value={projectForm.project_url || ''} onChange={(event) => setProjectForm({ ...projectForm, project_url: event.target.value })} placeholder="Project URL" className="input-base" />
+                <input type="url" value={projectForm.code || ''} onChange={(event) => setProjectForm({ ...projectForm, code: event.target.value })} placeholder="Repository URL" className="input-base" />
+                <input type="text" value={projectForm.tags} onChange={(event) => setProjectForm({ ...projectForm, tags: event.target.value })} placeholder="Tags (comma separated)" className="input-base" />
+                <div className="flex gap-2 pt-2">
+                  {editingItem && (
+                    <button type="button" onClick={resetCurrentForm} className="btn-outline flex-1">
+                      <FiX className="h-4 w-4" /> Cancel
+                    </button>
+                  )}
+                  <button type="submit" disabled={loading} className="btn-primary flex-1 disabled:opacity-60">
+                    <FiSave className="h-4 w-4" /> {editingItem ? 'Update' : 'Save'}
+                  </button>
                 </div>
-              ) : (
-                renderTable()
-              )}
+              </form>
+            )}
+
+            {activeTab === 'experiences' && (
+              <form onSubmit={handleExperienceSubmit} className="space-y-3">
+                <input type="text" required value={experienceForm.title} onChange={(event) => setExperienceForm({ ...experienceForm, title: event.target.value })} placeholder="Title" className="input-base" />
+                <input type="text" required value={experienceForm.company} onChange={(event) => setExperienceForm({ ...experienceForm, company: event.target.value })} placeholder="Company" className="input-base" />
+                <input type="date" required value={experienceForm.start_date} onChange={(event) => setExperienceForm({ ...experienceForm, start_date: event.target.value })} className="input-base" />
+                <input type="date" value={experienceForm.end_date} onChange={(event) => setExperienceForm({ ...experienceForm, end_date: event.target.value })} disabled={experienceForm.current} className="input-base disabled:opacity-60" />
+                <label className="flex items-center gap-2 text-sm text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={experienceForm.current}
+                    onChange={(event) => setExperienceForm({ ...experienceForm, current: event.target.checked, end_date: event.target.checked ? '' : experienceForm.end_date })}
+                  />
+                  I currently work here
+                </label>
+                <textarea required rows="3" value={experienceForm.description} onChange={(event) => setExperienceForm({ ...experienceForm, description: event.target.value })} placeholder="Description" className="input-base resize-none" />
+                <div className="flex gap-2 pt-2">
+                  {editingItem && (
+                    <button type="button" onClick={resetCurrentForm} className="btn-outline flex-1">
+                      <FiX className="h-4 w-4" /> Cancel
+                    </button>
+                  )}
+                  <button type="submit" disabled={loading} className="btn-primary flex-1 disabled:opacity-60">
+                    <FiSave className="h-4 w-4" /> {editingItem ? 'Update' : 'Save'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {activeTab === 'skills' && (
+              <form onSubmit={handleSkillSubmit} className="space-y-3">
+                <input type="text" required value={skillForm.name} onChange={(event) => setSkillForm({ ...skillForm, name: event.target.value })} placeholder="Skill name" className="input-base" />
+                <div>
+                  <input type="range" min="0" max="100" value={skillForm.level} onChange={(event) => setSkillForm({ ...skillForm, level: Number(event.target.value) })} className="w-full" />
+                  <p className="text-xs text-slate-400">{skillForm.level}%</p>
+                </div>
+                <select value={skillForm.category} onChange={(event) => setSkillForm({ ...skillForm, category: event.target.value })} className="input-base">
+                  <option value="frontend">Frontend</option>
+                  <option value="backend">Backend</option>
+                  <option value="design">Design</option>
+                  <option value="tools">Tools</option>
+                </select>
+                <input type="text" value={skillForm.icon} onChange={(event) => setSkillForm({ ...skillForm, icon: event.target.value })} placeholder="Icon" className="input-base" maxLength="2" />
+                <input type="number" value={skillForm.order} onChange={(event) => setSkillForm({ ...skillForm, order: Number(event.target.value) })} placeholder="Display order" className="input-base" />
+                <div className="flex gap-2 pt-2">
+                  {editingItem && (
+                    <button type="button" onClick={resetCurrentForm} className="btn-outline flex-1">
+                      <FiX className="h-4 w-4" /> Cancel
+                    </button>
+                  )}
+                  <button type="submit" disabled={loading} className="btn-primary flex-1 disabled:opacity-60">
+                    <FiSave className="h-4 w-4" /> {editingItem ? 'Update' : 'Save'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </section>
+
+          <section className="surface p-6 lg:col-span-2">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-white">All {activeTab}</h2>
+              <p className="text-sm text-slate-400">{loading ? 'Loading...' : `${count} items`}</p>
             </div>
-          </motion.div>
+
+            {loading ? (
+              <div className="space-y-2">
+                {[...Array(4)].map((_, index) => (
+                  <div key={index} className="h-10 animate-pulse rounded-lg bg-slate-800" />
+                ))}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-800 text-slate-400">
+                      {activeTab === 'projects' && (
+                        <>
+                          <th className="px-2 py-3">Title</th>
+                          <th className="px-2 py-3">Category</th>
+                          <th className="px-2 py-3">Date</th>
+                        </>
+                      )}
+                      {activeTab === 'experiences' && (
+                        <>
+                          <th className="px-2 py-3">Title</th>
+                          <th className="px-2 py-3">Company</th>
+                          <th className="px-2 py-3">Period</th>
+                        </>
+                      )}
+                      {activeTab === 'skills' && (
+                        <>
+                          <th className="px-2 py-3">Skill</th>
+                          <th className="px-2 py-3">Level</th>
+                          <th className="px-2 py-3">Category</th>
+                        </>
+                      )}
+                      <th className="px-2 py-3">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {activeTab === 'projects' &&
+                      projects.map((project) => (
+                        <tr key={project.id} className="border-b border-slate-800/70">
+                          <td className="px-2 py-3 text-white">{project.title}</td>
+                          <td className="px-2 py-3 text-slate-300">{project.category}</td>
+                          <td className="px-2 py-3 text-slate-400">{new Date(project.created_at).toLocaleDateString()}</td>
+                          <td className="px-2 py-3">
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  setProjectForm({
+                                    ...project,
+                                    tags: parseTagsToText(project.tags),
+                                  });
+                                  setEditingItem(project.id);
+                                }}
+                                className="rounded-md border border-slate-700 p-2 text-slate-300 hover:bg-slate-800"
+                              >
+                                <FiEdit className="h-4 w-4" />
+                              </button>
+                              <button onClick={() => handleDelete('projects', project.id)} className="rounded-md border border-red-900/60 p-2 text-red-400 hover:bg-red-950/40">
+                                <FiTrash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+
+                    {activeTab === 'experiences' &&
+                      experiences.map((exp) => (
+                        <tr key={exp.id} className="border-b border-slate-800/70">
+                          <td className="px-2 py-3 text-white">{exp.title}</td>
+                          <td className="px-2 py-3 text-slate-300">{exp.company}</td>
+                          <td className="px-2 py-3 text-slate-400">
+                            {exp.start_date} - {exp.current ? 'Present' : exp.end_date || '-'}
+                          </td>
+                          <td className="px-2 py-3">
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  setExperienceForm({
+                                    ...defaultExperienceForm,
+                                    ...exp,
+                                    end_date: exp.end_date || '',
+                                  });
+                                  setEditingItem(exp.id);
+                                }}
+                                className="rounded-md border border-slate-700 p-2 text-slate-300 hover:bg-slate-800"
+                              >
+                                <FiEdit className="h-4 w-4" />
+                              </button>
+                              <button onClick={() => handleDelete('experiences', exp.id)} className="rounded-md border border-red-900/60 p-2 text-red-400 hover:bg-red-950/40">
+                                <FiTrash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+
+                    {activeTab === 'skills' &&
+                      skills.map((skill) => (
+                        <tr key={skill.id} className="border-b border-slate-800/70">
+                          <td className="px-2 py-3 text-white">
+                            <span className="mr-2">{skill.icon}</span>
+                            {skill.name}
+                          </td>
+                          <td className="px-2 py-3 text-slate-300">{skill.level}%</td>
+                          <td className="px-2 py-3 text-slate-400">{skill.category}</td>
+                          <td className="px-2 py-3">
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  setSkillForm(skill);
+                                  setEditingItem(skill.id);
+                                }}
+                                className="rounded-md border border-slate-700 p-2 text-slate-300 hover:bg-slate-800"
+                              >
+                                <FiEdit className="h-4 w-4" />
+                              </button>
+                              <button onClick={() => handleDelete('skills', skill.id)} className="rounded-md border border-red-900/60 p-2 text-red-400 hover:bg-red-950/40">
+                                <FiTrash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
         </div>
       </div>
     </div>
@@ -713,3 +448,4 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+

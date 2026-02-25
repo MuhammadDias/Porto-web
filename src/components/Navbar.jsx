@@ -1,118 +1,129 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { FiMenu, FiX, FiUser } from 'react-icons/fi';
+import { FiMenu, FiX } from 'react-icons/fi';
 import { supabase } from '../supabase/client';
+import { useLanguage } from '../i18n';
+
+const navItems = [
+  { key: 'nav.home', path: '/' },
+  { key: 'nav.about', path: '/about' },
+  { key: 'nav.projects', path: '/projects' },
+  { key: 'nav.contact', path: '/contact' },
+];
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
+  const [isHoveringMenu, setIsHoveringMenu] = useState(false);
   const [user, setUser] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
+  const { lang, setLang, t } = useLanguage();
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-
     const getUser = async () => {
       const {
-        data: { user },
+        data: { user: currentUser },
       } = await supabase.auth.getUser();
-      setUser(user);
+      setUser(currentUser);
     };
-
-    window.addEventListener('scroll', handleScroll);
     getUser();
-
-    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  const navItems = [
-    { name: 'Home', path: '/' },
-    { name: 'About', path: '/about' },
-    { name: 'Projects', path: '/projects' },
-    { name: 'Contact', path: '/contact' },
-  ];
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setUser(null);
+    setIsOpen(false);
     navigate('/');
   };
 
+  const closeMenu = () => {
+    setIsOpen(false);
+    setIsHoveringMenu(false);
+  };
+
+  const isMenuVisible = isOpen || isHoveringMenu;
+
   return (
-    <motion.nav initial={{ y: -100 }} animate={{ y: 0 }} className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 rounded-2x1 glass-effect py-3 : 'bg-transparent py-5'}`}>
-      <div className="container mx-auto px-4 md:px-8">
-        <div className="flex justify-between items-center">
-          {/* Logo */}
-          <Link to="/" className="text-xl font-bold gradient-text">
-            Portfolio
-          </Link>
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-black/85 backdrop-blur">
+      <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-8">
+        {/* Logo */}
+        <Link to="/" className="text-2xl font-medium lowercase tracking-tight text-white md:text-[2.2rem]" style={{ fontFamily: "'Poppins', sans-serif" }}>
+          dayess
+        </Link>
 
-          {/* Desktop Menu */}
-          <div className="hidden md:flex items-center space-x-8">
-            {navItems.map((item) => (
-              <Link key={item.name} to={item.path} className={`relative px-1 py-2 text-sm font-medium transition-colors ${location.pathname === item.path ? 'text-cyan-400' : 'text-slate-300 hover:text-cyan-400'}`}>
-                {item.name}
-                {location.pathname === item.path && <motion.div layoutId="underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-cyan-500 to-blue-500" />}
-              </Link>
-            ))}
+        {/* Desktop Navigation */}
+        <nav className="hidden items-center gap-2 md:flex">
+          {navItems.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`rounded-full px-4 py-1.5 text-sm uppercase tracking-wide transition-colors ${
+                location.pathname === item.path ? 'bg-white/10 text-white' : 'text-zinc-300 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              {t(item.key)}
+            </Link>
+          ))}
+        </nav>
 
-            {user ? (
-              <div className="flex items-center space-x-4">
-                <Link to="/admin" className="btn-secondary text-sm px-4 py-2">
-                  Dashboard
-                </Link>
-                <button onClick={handleLogout} className="text-sm text-slate-400 hover:text-red-400 transition-colors">
-                  Logout
-                </button>
-              </div>
-            ) : null}
+        <div className="flex items-center gap-4">
+          {/* Language Switcher */}
+          <div className="hidden items-center gap-2 md:flex">
+            <button onClick={() => setLang('id')} className={`rounded-full border px-2 py-0.5 text-xs uppercase tracking-[0.1em] transition-colors ${lang === 'id' ? 'border-white/60 text-white' : 'border-white/20 text-zinc-400 hover:border-white/40 hover:text-white'}`}>
+              ID
+            </button>
+            <button onClick={() => setLang('en')} className={`rounded-full border px-2 py-0.5 text-xs uppercase tracking-[0.1em] transition-colors ${lang === 'en' ? 'border-white/60 text-white' : 'border-white/20 text-zinc-400 hover:border-white/40 hover:text-white'}`}>
+              EN
+            </button>
           </div>
 
           {/* Mobile Menu Button */}
-          <button onClick={() => setIsOpen(!isOpen)} className="md:hidden text-slate-300 hover:text-cyan-400 transition-colors">
-            {isOpen ? <FiX className="w-6 h-6" /> : <FiMenu className="w-6 h-6" />}
-          </button>
-        </div>
+          <div className="relative justify-self-end md:hidden" onMouseEnter={() => setIsHoveringMenu(true)} onMouseLeave={() => setIsHoveringMenu(false)}>
+            <button onClick={() => setIsOpen((prev) => !prev)} className="rounded-full border border-white/20 p-2.5 text-zinc-200 transition-colors hover:border-white/45 hover:text-white" aria-label="Toggle menu">
+              {isMenuVisible ? <FiX className="h-5 w-5" /> : <FiMenu className="h-5 w-5" />}
+            </button>
 
-        {/* Mobile Menu */}
-        <motion.div initial={false} animate={isOpen ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }} className="md:hidden overflow-hidden">
-          <div className="pt-4 pb-3 space-y-3">
-            {navItems.map((item) => (
-              <Link
-                key={item.name}
-                to={item.path}
-                onClick={() => setIsOpen(false)}
-                className={`block px-3 py-2 rounded-lg transition-colors ${location.pathname === item.path ? 'bg-cyan-500/10 text-cyan-400' : 'text-slate-300 hover:bg-white/5'}`}
-              >
-                {item.name}
-              </Link>
-            ))}
-            <div className="pt-2 border-t border-white/10">
-              {user ? (
-                <>
-                  <Link to="/admin" onClick={() => setIsOpen(false)} className="block px-3 py-2 rounded-lg text-cyan-400 hover:bg-cyan-500/10">
-                    Dashboard
-                  </Link>
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setIsOpen(false);
-                    }}
-                    className="block w-full text-left px-3 py-2 rounded-lg text-red-400 hover:bg-red-500/10"
-                  >
-                    Logout
+            {isMenuVisible && (
+              <div className="absolute right-0 top-[calc(100%+10px)] w-56 border border-white/20 bg-black/95 p-3 shadow-[0_12px_24px_rgba(0,0,0,0.45)]">
+                {/* Language Switcher (Mobile) */}
+                <div className="mb-3 flex items-center gap-2 border-b border-white/10 pb-3">
+                  <button onClick={() => setLang('id')} className={`flex-1 border px-2.5 py-1 text-xs uppercase tracking-[0.14em] transition-colors ${lang === 'id' ? 'border-white/70 text-white' : 'border-white/20 text-zinc-400 hover:border-white/40 hover:text-white'}`}>
+                    ID
                   </button>
-                </>
-              ) : null}
-            </div>
+                  <button onClick={() => setLang('en')} className={`flex-1 border px-2.5 py-1 text-xs uppercase tracking-[0.14em] transition-colors ${lang === 'en' ? 'border-white/70 text-white' : 'border-white/20 text-zinc-400 hover:border-white/40 hover:text-white'}`}>
+                    EN
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {navItems.map((item) => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={closeMenu}
+                      className={`block border px-3 py-2 text-sm uppercase tracking-[0.12em] transition-colors ${location.pathname === item.path ? 'border-white/45 text-white' : 'border-white/10 text-zinc-300 hover:border-white/30 hover:text-white'}`}
+                    >
+                      {t(item.key)}
+                    </Link>
+                  ))}
+                </div>
+
+                {user && (
+                  <div className="mt-3 space-y-2 border-t border-white/15 pt-3">
+                    <Link to="/admin" onClick={closeMenu} className="block border border-white/10 px-3 py-2 text-sm uppercase tracking-[0.12em] text-zinc-300 transition-colors hover:border-white/30 hover:text-white">
+                      {t('nav.dashboard')}
+                    </Link>
+                    <button onClick={handleLogout} className="block w-full border border-white/10 px-3 py-2 text-left text-sm uppercase tracking-[0.12em] text-zinc-300 transition-colors hover:border-white/30 hover:text-red-300">
+                      {t('nav.logout')}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        </motion.div>
+        </div>
       </div>
-    </motion.nav>
+    </header>
   );
 };
 

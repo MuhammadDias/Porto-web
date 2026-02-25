@@ -1,8 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { FiMail, FiPhone, FiMapPin, FiGithub, FiLinkedin, FiInstagram, FiArrowRight } from 'react-icons/fi';
+import React, { useEffect, useMemo, useState } from 'react';
+import { FiArrowRight, FiGithub, FiInstagram, FiLinkedin, FiMail, FiMapPin, FiPhone } from 'react-icons/fi';
 import emailjs from '@emailjs/browser';
 import toast from 'react-hot-toast';
+import { useLanguage } from '../i18n';
+
+const contactInfo = [
+  { icon: FiMail, label: 'Email', value: 'diasizzat222@gmail.com', href: 'mailto:diasizzat222@gmail.com' },
+  { icon: FiPhone, label: 'Phone', value: '+62 857 048 800 50', href: 'tel:+6285704880050' },
+  { icon: FiMapPin, label: 'Address', value: 'Sekargadung, Dukun, Gresik', href: '#' },
+];
+
+const socialLinks = [
+  { icon: FiGithub, href: 'https://github.com/MuhammadDias', label: 'GitHub' },
+  { icon: FiLinkedin, href: 'https://www.linkedin.com/in/m-dias-9a3364278?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app', label: 'LinkedIn' },
+  { icon: FiInstagram, href: 'https://www.instagram.com/userswallow_/', label: 'Instagram' },
+];
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -11,95 +23,44 @@ export default function Contact() {
     message: '',
     interest: 'ui-ux-design',
   });
-
   const [loading, setLoading] = useState(false);
+  const { t } = useLanguage();
 
-  // Initialize EmailJS - Replace with your Public Key from EmailJS dashboard
+  const interests = useMemo(
+    () => [
+      { id: 'ui-ux-design', label: t('contact.interests.uiux') },
+      { id: 'web-design', label: t('contact.interests.web') },
+      { id: 'graphic-design', label: t('contact.interests.graphic') },
+      { id: 'motion-graphics', label: t('contact.interests.motion') },
+      { id: 'other', label: t('contact.interests.other') },
+    ],
+    [t],
+  );
+
   useEffect(() => {
-    emailjs.init('YGyR9zdv-DcSfXS1f'); // Replace dengan Public Key kamu dari emailjs.com
+    emailjs.init('YGyR9zdv-DcSfXS1f');
   }, []);
 
-  const interests = [
-    { id: 'ui-ux-design', label: 'UI/UX Design' },
-    { id: 'web-design', label: 'Web Design' },
-    { id: 'graphic-design', label: 'Graphic Design' },
-    { id: 'motion-graphics', label: 'Motion Graphics' },
-    { id: 'other', label: 'Other' },
-  ];
-
-  const contactInfo = [
-    {
-      icon: FiMail,
-      label: 'Email',
-      value: 'diasizzat222@gmail.com',
-      href: 'mailto:diasizzat222@gmail.com',
-    },
-    {
-      icon: FiPhone,
-      label: 'Phone',
-      value: '+62 857 048 800 50',
-      href: 'tel:+6285704880050',
-    },
-    {
-      icon: FiMapPin,
-      label: 'Address',
-      value: 'Sekargadung, Dukun, Gresik',
-      href: '#',
-    },
-  ];
-
-  const socialLinks = [
-    {
-      icon: FiGithub,
-      label: 'GitHub',
-      href: 'https://github.com/MuhammadDias',
-      color: 'hover:text-white',
-    },
-    {
-      icon: FiLinkedin,
-      label: 'LinkedIn',
-      href: 'https://www.linkedin.com/in/m-dias-9a3364278?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app',
-      color: 'hover:text-blue-400',
-    },
-    {
-      icon: FiInstagram,
-      label: 'Instagram',
-      href: 'https://www.instagram.com/userswallow_/',
-      color: 'hover:text-pink-400',
-    },
-  ];
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setLoading(true);
 
     try {
-      // Template parameters untuk EmailJS
-      const templateParams = {
-        to_email: 'diasizzat222@gmail.com', // Email tujuan
+      const response = await emailjs.send('service_1q84p7p', 'template_wbn7fjs', {
+        to_email: 'diasizzat222@gmail.com',
         from_name: formData.name,
         from_email: formData.email,
         interest: formData.interest,
         message: formData.message,
-      };
-
-      // Kirim email via EmailJS
-      const response = await emailjs.send(
-        'service_1q84p7p', // Service ID dari EmailJS
-        'template_wbn7fjs', // Template ID dari EmailJS
-        templateParams
-      );
+      });
 
       if (response.status === 200) {
-        toast.success("Message sent successfully! I'll get back to you soon.");
+        toast.success(t('contact.success'));
         setFormData({
           name: '',
           email: '',
@@ -108,212 +69,82 @@ export default function Contact() {
         });
       }
     } catch (error) {
-      console.error('EmailJS error:', error);
-      toast.error('Failed to send message. Please try again or contact directly.');
+      toast.error(t('contact.fail'));
     } finally {
       setLoading(false);
     }
   };
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.2,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.5 },
-    },
-  };
-
   return (
-    <div className="pt-20 pb-12">
-      <div className="container mx-auto px-4 md:px-8">
-        {/* Header */}
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-16">
-          <h1 className="text-5xl md:text-6xl font-bold mb-4">
-            Get In <span className="gradient-text">Touch</span>
-          </h1>
-          <p className="text-lg text-slate-400 max-w-2xl">Have a project in mind? Let's collaborate and create something amazing together.</p>
-        </motion.div>
+    <div className="pb-12 pt-8 md:pb-14 md:pt-12">
+      <div className="container mx-auto grid gap-4 px-4 md:gap-6 md:grid-cols-2 md:px-8">
+        <section className="surface interactive-card p-5 md:p-8">
+          <h1 className="mb-3 text-3xl font-semibold text-white md:text-4xl">{t('contact.title')}</h1>
+          <p className="mb-5 text-sm text-slate-300 md:mb-6 md:text-base">{t('contact.subtitle')}</p>
 
-        {/* Contact Section */}
-        <div className="grid md:grid-cols-2 gap-12">
-          {/* Left Side - Contact Info */}
-          <motion.div variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true }} className="space-y-12">
-            {/* Main Message */}
-            <motion.div variants={itemVariants}>
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
-                Let's discuss on something <span className="gradient-text">cool</span> together
-              </h2>
-            </motion.div>
+          <div className="space-y-3">
+            {contactInfo.map((item) => {
+              const Icon = item.icon;
+              return (
+                <a key={item.label} href={item.href} className="flex items-start gap-3 rounded-none border border-slate-800 p-3 transition-colors hover:bg-slate-900">
+                  <Icon className="mt-0.5 h-4 w-4 text-white" />
+                  <div>
+                    <p className="text-xs text-slate-400">{item.label}</p>
+                    <p className="text-sm text-white">{item.value}</p>
+                  </div>
+                </a>
+              );
+            })}
+          </div>
 
-            {/* Contact Info */}
-            <motion.div variants={containerVariants} className="space-y-6">
-              {contactInfo.map((info, index) => {
-                const Icon = info.icon;
-                return (
-                  <motion.a key={info.label} variants={itemVariants} href={info.href} className="flex items-start gap-4 group cursor-pointer">
-                    <div className="relative flex-shrink-0">
-                      <div className="absolute inset-0 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <div
-                        className="relative w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 
-                                  flex items-center justify-center"
-                      >
-                        <Icon className="w-6 h-6 text-white" />
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-slate-400 text-sm font-medium">{info.label}</p>
-                      <p className="text-white font-semibold group-hover:text-cyan-400 transition-colors">{info.value}</p>
-                    </div>
-                  </motion.a>
-                );
-              })}
-            </motion.div>
+          <div className="mt-6 flex gap-2">
+            {socialLinks.map((item) => {
+              const Icon = item.icon;
+              return (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-9 w-9 items-center justify-center rounded-none border border-slate-700 text-slate-300 transition-all duration-200 motion-safe:hover:-translate-y-0.5 motion-safe:hover:translate-x-0.5 hover:border-slate-500 hover:text-white"
+                  aria-label={item.label}
+                >
+                  <Icon className="h-4 w-4" />
+                </a>
+              );
+            })}
+          </div>
+        </section>
 
-            {/* Social Links */}
-            <motion.div variants={itemVariants} className="pt-6 border-t border-white/10">
-              <p className="text-slate-400 text-sm font-medium mb-4">Follow me</p>
-              <div className="flex gap-4">
-                {socialLinks.map((social) => {
-                  const Icon = social.icon;
-                  return (
-                    <motion.a
-                      key={social.label}
-                      href={social.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                      className={`w-12 h-12 rounded-lg backdrop-blur-md bg-white/10 border border-white/20
-                               hover:bg-white/20 hover:border-white/30 flex items-center justify-center
-                               text-slate-300 transition-all duration-300 ${social.color}`}
-                      title={social.label}
-                    >
-                      <Icon className="w-5 h-5" />
-                    </motion.a>
-                  );
-                })}
-              </div>
-            </motion.div>
-          </motion.div>
-
-          {/* Right Side - Contact Form */}
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
-            <div
-              className="relative backdrop-blur-md bg-white/10 hover:bg-white/15 
-                         border border-white/20 hover:border-white/30 rounded-3xl p-8 md:p-10
-                         transition-all duration-300"
-            >
-              {/* Decorative gradient */}
-              <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 rounded-3xl" />
-
-              <div className="relative z-10">
-                <h3 className="text-2xl font-bold mb-6">Let's get started</h3>
-
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Interest Selection */}
-                  <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}>
-                    <label className="text-sm font-semibold text-slate-300 mb-3 block">I'm interested in...</label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {interests.map((option) => (
-                        <button
-                          key={option.id}
-                          type="button"
-                          onClick={() =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              interest: option.id,
-                            }))
-                          }
-                          className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 text-sm
-                                   ${formData.interest === option.id ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/30' : 'bg-white/10 text-slate-300 hover:bg-white/20 border border-white/20'}`}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </motion.div>
-
-                  {/* Name Input */}
-                  <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }}>
-                    <input
-                      type="text"
-                      name="name"
-                      placeholder="Your name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      required
-                      className="w-full bg-transparent border-b-2 border-slate-400 pb-3 text-white 
-                               placeholder-slate-400 focus:outline-none focus:border-cyan-400
-                               transition-colors text-lg"
-                    />
-                  </motion.div>
-
-                  {/* Email Input */}
-                  <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.3 }}>
-                    <input
-                      type="email"
-                      name="email"
-                      placeholder="Your email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
-                      className="w-full bg-transparent border-b-2 border-slate-400 pb-3 text-white 
-                               placeholder-slate-400 focus:outline-none focus:border-cyan-400
-                               transition-colors text-lg"
-                    />
-                  </motion.div>
-
-                  {/* Message Input */}
-                  <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.4 }}>
-                    <textarea
-                      name="message"
-                      placeholder="Your message"
-                      value={formData.message}
-                      onChange={handleChange}
-                      required
-                      rows={5}
-                      className="w-full bg-transparent border-b-2 border-slate-400 pb-3 text-white 
-                               placeholder-slate-400 focus:outline-none focus:border-cyan-400
-                               transition-colors resize-none text-lg"
-                    />
-                  </motion.div>
-
-                  {/* Submit Button */}
-                  <motion.button
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.5 }}
-                    type="submit"
-                    disabled={loading}
-                    className="w-full mt-8 btn-primary flex items-center justify-center gap-2 disabled:opacity-50"
+        <section className="surface p-5 md:p-8">
+          <h2 className="mb-4 text-xl font-semibold text-white">{t('contact.sendMessage')}</h2>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="mb-2 block text-sm text-slate-300">{t('contact.interest')}</label>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {interests.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setFormData((prev) => ({ ...prev, interest: option.id }))}
+                    className={`rounded-none border px-3 py-2 text-xs transition-colors ${formData.interest === option.id ? 'border-white bg-white text-slate-950' : 'border-slate-700 text-slate-300 hover:bg-slate-900'}`}
                   >
-                    {loading ? (
-                      <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white" />
-                    ) : (
-                      <>
-                        Send Message
-                        <FiArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </motion.button>
-                </form>
+                    {option.label}
+                  </button>
+                ))}
               </div>
             </div>
-          </motion.div>
-        </div>
+
+            <input type="text" name="name" placeholder={t('contact.yourName')} value={formData.name} onChange={handleChange} required className="input-base" />
+            <input type="email" name="email" placeholder={t('contact.yourEmail')} value={formData.email} onChange={handleChange} required className="input-base" />
+            <textarea name="message" placeholder={t('contact.yourMessage')} value={formData.message} onChange={handleChange} rows={6} required className="input-base resize-none" />
+
+            <button type="submit" disabled={loading} className="btn-primary w-full disabled:opacity-60">
+              {loading ? t('contact.sending') : t('contact.send')}
+              {!loading && <FiArrowRight className="h-4 w-4" />}
+            </button>
+          </form>
+        </section>
       </div>
     </div>
   );

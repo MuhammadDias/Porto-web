@@ -1,363 +1,148 @@
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FiMail, FiDownload, FiX, FiArrowRight } from 'react-icons/fi';
+import { FiDownload, FiMail, FiX } from 'react-icons/fi';
 import { supabase } from '../supabase/client';
 import toast from 'react-hot-toast';
-import ProfileCard from '../components/ProfileCard';
+import { useLanguage } from '../i18n';
+import DStatusLoader from '../components/DStatusLoader';
+
+const biodata = {
+  name: 'Muhammad Dias Al Izzat',
+  birthplace: 'Gresik',
+  birthdate: '27 August 2005',
+  status: 'Student',
+  address: 'Sekargadung, Dukun, Gresik',
+};
 
 export default function About() {
   const [experiences, setExperiences] = useState([]);
-  const [selectedExperience, setSelectedExperience] = useState(null);
   const [skills, setSkills] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const biodata = {
-    nama: 'Muhammad Dias Al Izzat',
-    tempat_lahir: 'Gresik',
-    tanggal_lahir: '27 Agustus 2005',
-    status: 'Mahasiswa',
-    alamat: 'Sekargadung, Dukun, Gresik',
-  };
+  const [selectedExperience, setSelectedExperience] = useState(null);
+  const { lang, t } = useLanguage();
 
   useEffect(() => {
-    fetchExperiences();
-    fetchSkills();
+    const fetchData = async () => {
+      try {
+        const [{ data: expData, error: expError }, { data: skillData, error: skillError }] = await Promise.all([
+          supabase.from('experiences').select('*').order('start_date', { ascending: false }),
+          supabase.from('skills').select('*').order('order', { ascending: true }),
+        ]);
 
-    // Subscribe to real-time changes
-    const expSubscription = supabase
-      .channel('experiences')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'experiences',
-        },
-        (payload) => {
-          console.log('Experiences updated:', payload);
-          fetchExperiences();
-        }
-      )
-      .subscribe();
+        if (expError) throw expError;
+        if (skillError) throw skillError;
 
-    const skillSubscription = supabase
-      .channel('skills')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'skills',
-        },
-        (payload) => {
-          console.log('Skills updated:', payload);
-          fetchSkills();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      expSubscription.unsubscribe();
-      skillSubscription.unsubscribe();
-    };
-  }, []);
-
-  const fetchSkills = async () => {
-    try {
-      const { data, error } = await supabase.from('skills').select('*').order('order', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching skills:', error);
-        setSkills([]);
-      } else {
-        setSkills(data || []);
+        setExperiences(expData || []);
+        setSkills(skillData || []);
+      } catch (error) {
+        toast.error(t('about.failLoad'));
+      } finally {
         setLoading(false);
       }
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error('Failed to load skills');
-      setSkills([]);
-      setLoading(false);
-    }
-  };
+    };
 
-  const fetchExperiences = async () => {
-    try {
-      const { data, error } = await supabase.from('experiences').select('*').order('start_date', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching experiences:', error);
-        setExperiences([]);
-      } else {
-        setExperiences(data || []);
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error('Failed to load experiences');
-      setExperiences([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.2,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.5 },
-    },
-  };
+    fetchData();
+  }, [t]);
 
   return (
-    <div className="pt-20 pb-12 min-h-screen">
-      <div className="container mx-auto px-4 md:px-8">
-        {/* Hero Section */}
-        <motion.div initial={{ opacity: 0, y: -30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="mb-16">
-          <h1 className="text-5xl md:text-6xl font-bold mb-4">
-            About <span className="gradient-text">Me</span>
-          </h1>
-          <p className="text-lg text-slate-400 max-w-2xl">Creative designer & developer passionate about creating meaningful digital experiences</p>
-        </motion.div>
+    <div className="pb-12 pt-8 md:pb-14 md:pt-12">
+      <div className="container mx-auto space-y-10 px-4 md:space-y-12 md:px-8">
+        <section className="surface interactive-card p-6 md:p-8">
+          <h1 className="mb-2 text-3xl font-semibold text-white md:text-4xl">{t('about.title')}</h1>
+          <p className="max-w-2xl text-slate-300">{t('about.subtitle')}</p>
+        </section>
 
-        {/* Biodata & Photo Section */}
-        <motion.section initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-20">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            {/* Biodata */}
-            <motion.div variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-              <div className="glass-effect rounded-2xl p-6">
-                <h2 className="text-2xl font-bold mb-5 flex items-center gap-3">
-                  <div className="w-1 h-6 bg-gradient-to-b from-cyan-500 to-blue-500 rounded" />
-                  Personal Info
-                </h2>
+        <section className="surface p-5 md:p-6">
+          <div className="grid gap-6 md:grid-cols-[280px_1fr] md:items-start">
+            <div className="mx-auto w-full max-w-[280px] overflow-hidden border-2 border-white/40">
+              <img src="/Dayess_1.png" alt="Muhammad Dias Al Izzat" className="h-72 w-full object-cover" />
+            </div>
 
-                <div className="space-y-3">
-                  {Object.entries(biodata).map(([key, value], index) => (
-                    <motion.div key={key} variants={itemVariants} className="border-b border-white/5 pb-2">
-                      <span className="text-slate-500 text-xs uppercase tracking-wider mb-1 block">{key.replace('_', ' ')}</span>
-                      <span className="text-white text-base font-semibold">{value}</span>
-                    </motion.div>
-                  ))}
-                </div>
-
-                {/* CTA Buttons */}
-                <motion.div variants={itemVariants} className="mt-8 flex gap-4 flex-col sm:flex-row">
-                  <a href="mailto:contact@example.com" className="btn-primary flex items-center justify-center gap-2">
-                    <FiMail className="w-4 h-4" />
-                    Contact Me
-                  </a>
-                  <a href="/CV DPR Fest.jpg" download="CV_Muhammad_Dias.jpg" className="btn-secondary flex items-center justify-center gap-2">
-                    <FiDownload className="w-4 h-4" />
-                    Download CV
-                  </a>
-                </motion.div>
+            <div>
+              <h2 className="mb-4 text-xl font-semibold text-white">{t('about.personalInfo')}</h2>
+              <div className="space-y-3">
+                {Object.entries(biodata).map(([key, value]) => (
+                  <div key={key} className="rounded-lg border border-slate-800 p-3">
+                    <p className="text-xs uppercase tracking-wide text-slate-400">{t(`about.biodata.${key}`)}</p>
+                    <p className="text-sm text-white">{value}</p>
+                  </div>
+                ))}
               </div>
-            </motion.div>
-
-            {/* Profile Card */}
-            <motion.div initial={{ opacity: 0, scale: 0.8 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="-mt-8">
-              <ProfileCard
-                name="M. Dias Al Izzat"
-                title="UI/UX Designer & Frontend Developer"
-                handle="userswallow_"
-                status="Online"
-                contactText="Contact Me"
-                avatarUrl="/Dayess_1.png"
-                showUserInfo={true}
-                enableTilt={true}
-                enableMobileTilt={false}
-                onContactClick={() => console.log('Contact clicked')}
-              />
-            </motion.div>
+              <div className="mt-5 flex flex-wrap gap-3">
+                <a href="mailto:diasizzat222@gmail.com" className="btn-primary">
+                  <FiMail className="h-4 w-4" /> {t('about.contact')}
+                </a>
+                <a href="/CV DPR Fest.jpg" download="CV_Muhammad_Dias.jpg" className="btn-outline">
+                  <FiDownload className="h-4 w-4" /> {t('about.downloadCv')}
+                </a>
+              </div>
+            </div>
           </div>
-        </motion.section>
+        </section>
 
-        {/* Skills Section */}
-        <motion.section initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-20">
-          <h2 className="text-3xl font-bold mb-12 flex items-center gap-3">
-            <div className="w-1 h-8 bg-gradient-to-b from-cyan-500 to-blue-500 rounded" />
-            My Skills
-          </h2>
-
+        <section>
+          <h2 className="mb-4 text-2xl font-semibold text-white">{t('about.skills')}</h2>
           {loading ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500"></div>
+            <div className="surface p-6">
+              <DStatusLoader label={t('about.loadingSkills')} />
             </div>
           ) : skills.length > 0 ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {skills.map((skill, index) => (
-                <motion.div
-                  key={skill.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
-                  className="group relative backdrop-blur-md bg-white/10 hover:bg-white/20 
-                           border border-white/20 hover:border-white/30 rounded-2xl p-5 
-                           transition-all duration-300 hover:shadow-xl 
-                           hover:shadow-cyan-500/20"
-                >
-                  {/* Decorative gradient */}
-                  <div
-                    className="absolute inset-0 bg-gradient-to-br from-cyan-500/0 to-blue-500/0 
-                              group-hover:from-cyan-500/10 group-hover:to-blue-500/10 rounded-2xl 
-                              transition-all duration-300"
-                  />
-
-                  <div className="relative z-10">
-                    <div className="text-4xl mb-3">{skill.icon || '💻'}</div>
-                    <h3 className="text-base font-bold mb-1 text-white">{skill.name}</h3>
-                    <p className="text-xs text-slate-300 mb-3 capitalize">{skill.category}</p>
-
-                    {skill.level && (
-                      <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          whileInView={{ width: `${skill.level}%` }}
-                          viewport={{ once: true }}
-                          transition={{ duration: 1, delay: index * 0.1 }}
-                          className="h-1.5 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500"
-                        />
-                      </div>
-                    )}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {skills.map((skill) => (
+                <div key={skill.id} className="surface interactive-card p-5">
+                  <p className="mb-1 text-sm text-slate-400">{skill.category || 'General'}</p>
+                  <h3 className="mb-3 font-medium text-white">{skill.name}</h3>
+                  <div className="h-2 rounded-full bg-slate-800">
+                    <div className="h-2 rounded-full bg-white" style={{ width: `${skill.level || 0}%` }} />
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
           ) : (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
-              <p className="text-slate-400">No skills added yet</p>
-            </motion.div>
+            <div className="surface p-6 text-sm text-slate-400">{t('about.noSkills')}</div>
           )}
-        </motion.section>
+        </section>
 
-        {/* Experience Section */}
-        <motion.section initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-          <h2 className="text-3xl font-bold mb-12 flex items-center gap-3">
-            <div className="w-1 h-8 bg-gradient-to-b from-cyan-500 to-blue-500 rounded" />
-            Experience
-          </h2>
-
+        <section>
+          <h2 className="mb-4 text-2xl font-semibold text-white">{t('about.experience')}</h2>
           {loading ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500"></div>
+            <div className="surface p-6">
+              <DStatusLoader label={t('about.loadingExp')} />
             </div>
           ) : experiences.length > 0 ? (
-            <div className="grid md:grid-cols-3 gap-5">
-              {experiences.map((exp, index) => (
-                <motion.div
-                  key={exp.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
-                  className="group relative backdrop-blur-md bg-white/10 hover:bg-white/20 
-                           border border-white/20 hover:border-white/30 rounded-2xl p-6 
-                           transition-all duration-300 hover:shadow-xl 
-                           hover:shadow-cyan-500/20 hover:scale-105 flex flex-col"
-                >
-                  {/* Decorative gradient */}
-                  <div
-                    className="absolute inset-0 bg-gradient-to-br from-cyan-500/0 to-blue-500/0 
-                              group-hover:from-cyan-500/10 group-hover:to-blue-500/10 rounded-2xl 
-                              transition-all duration-300"
-                  />
-
-                  {/* Left border accent */}
-                  <div
-                    className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-cyan-500 to-blue-500 
-                              rounded-l-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                  />
-
-                  <div className="relative z-10 flex flex-col h-full">
-                    {/* Date */}
-                    <span className="text-xs font-semibold text-cyan-300 uppercase tracking-wider mb-2">
-                      {new Date(exp.start_date).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                      })}
-                      {exp.end_date && exp.end_date !== exp.start_date
-                        ? ` - ${new Date(exp.end_date).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'short',
-                          })}`
-                        : ' - Now'}
-                    </span>
-
-                    {/* Title */}
-                    <h3 className="text-lg font-bold mb-1 text-white line-clamp-2">{exp.title}</h3>
-
-                    {/* Company */}
-                    <p className="text-sm text-cyan-300 font-semibold mb-3">{exp.company}</p>
-
-                    {/* Description */}
-                    <p className="text-xs text-slate-300 flex-1 line-clamp-3 leading-relaxed">{exp.description}</p>
-
-                    {/* View Details Button */}
-                    <button onClick={() => setSelectedExperience(exp)} className="mt-4 text-cyan-400 text-xs font-medium hover:text-cyan-300 transition-colors flex items-center gap-2 w-fit">
-                      View Details <FiArrowRight />
-                    </button>
-                  </div>
-                </motion.div>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {experiences.map((exp) => (
+                <article key={exp.id} className="surface interactive-card p-5">
+                  <p className="mb-1 text-xs text-white">
+                    {new Date(exp.start_date).toLocaleDateString(lang === 'id' ? 'id-ID' : 'en-US', { year: 'numeric', month: 'short' })}
+                    {exp.end_date ? ` - ${new Date(exp.end_date).toLocaleDateString(lang === 'id' ? 'id-ID' : 'en-US', { year: 'numeric', month: 'short' })}` : ` - ${t('common.present')}`}
+                  </p>
+                  <h3 className="text-lg font-medium text-white">{exp.title}</h3>
+                  <p className="mb-3 text-sm text-slate-300">{exp.company}</p>
+                  <p className="mb-4 line-clamp-3 text-sm text-slate-400">{exp.description}</p>
+                  <button onClick={() => setSelectedExperience(exp)} className="interactive-link text-sm text-white">
+                    {t('about.viewDetail')}
+                  </button>
+                </article>
               ))}
             </div>
           ) : (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
-              <p className="text-slate-400">No experiences added yet</p>
-            </motion.div>
+            <div className="surface p-6 text-sm text-slate-400">{t('about.noExp')}</div>
           )}
-        </motion.section>
+        </section>
       </div>
 
-      {/* Experience Detail Modal */}
-      <AnimatePresence>
-        {selectedExperience && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedExperience(null)}>
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl p-6 md:p-8 bg-[#0f172a] border border-white/20 shadow-2xl"
-            >
-              <button onClick={() => setSelectedExperience(null)} className="absolute top-4 right-4 p-2 rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors">
-                <FiX size={20} />
-              </button>
-
-              <span className="text-sm font-semibold text-cyan-400 uppercase tracking-wider mb-2 block">
-                {new Date(selectedExperience.start_date).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'short',
-                })}
-                {selectedExperience.end_date && selectedExperience.end_date !== selectedExperience.start_date
-                  ? ` - ${new Date(selectedExperience.end_date).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'short',
-                    })}`
-                  : ' - Now'}
-              </span>
-
-              <h2 className="text-2xl md:text-3xl font-bold mb-2 text-white">{selectedExperience.title}</h2>
-              <p className="text-lg text-cyan-300 font-medium mb-6">{selectedExperience.company}</p>
-
-              <div className="prose prose-invert max-w-none">
-                <p className="text-slate-300 leading-relaxed whitespace-pre-line">{selectedExperience.description}</p>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {selectedExperience && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setSelectedExperience(null)}>
+          <div className="surface relative w-full max-w-2xl p-6" onClick={(event) => event.stopPropagation()}>
+            <button onClick={() => setSelectedExperience(null)} className="absolute right-4 top-4 rounded-md p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
+              <FiX className="h-5 w-5" />
+            </button>
+            <h3 className="mb-1 text-2xl font-semibold text-white">{selectedExperience.title}</h3>
+            <p className="mb-4 text-white">{selectedExperience.company}</p>
+            <p className="text-slate-300">{selectedExperience.description}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

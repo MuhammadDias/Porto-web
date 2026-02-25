@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,35 +7,189 @@
   html {
     scroll-behavior: smooth;
   }
-  
+
   body {
-    @apply text-slate-200 bg-dark-900;
+    @apply bg-black text-white antialiased;
+    font-family: 'Poppins', sans-serif;
+    background-color: #020202;
+    background-image: radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.06), transparent 35%), radial-gradient(circle at 80% 100%, rgba(255, 255, 255, 0.04), transparent 40%);
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: 'Poppins', sans-serif;
+    letter-spacing: 0.01em;
+  }
+}
+
+.d-loader-wrap {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.d-loader-ring {
+  width: 4.5rem;
+  height: 4.5rem;
+  border: 2px solid rgba(255, 154, 60, 0.9);
+  border-radius: 999px;
+  animation: d-loader-breathe calc(var(--d-loader-speed, 1200ms) * 1.5) ease-in-out infinite;
+}
+
+.d-loader-glyph {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, calc(-50% - 0.1rem));
+  font-size: 2rem;
+  font-weight: 600;
+  color: #ffffff;
+  animation: d-loader-pulse calc(var(--d-loader-speed, 1200ms) * 1.1) ease-in-out infinite alternate;
+}
+
+.d-loader-label {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  animation: d-loader-pulse calc(var(--d-loader-speed, 1200ms) * 1.1) ease-in-out infinite alternate;
+}
+
+.home-page,
+.home-page h1,
+.home-page h2,
+.home-page h3,
+.home-page p,
+.home-page a,
+.home-page button {
+  font-family: 'Poppins', sans-serif;
+}
+
+.home-marquee {
+  display: flex;
+  width: max-content;
+  animation: home-marquee 80s linear infinite;
+}
+
+.home-marquee-reverse {
+  display: flex;
+  width: max-content;
+  animation: home-marquee-reverse 90s linear infinite;
+}
+
+@keyframes home-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes home-marquee-reverse {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes d-loader-breathe {
+  0%,
+  100% {
+    transform: scale(0.95);
+    opacity: 0.6;
+    box-shadow: 0 0 0 0 rgba(255, 154, 60, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+    box-shadow: 0 0 18px 5px rgba(255, 154, 60, 0.15);
+  }
+}
+
+@keyframes d-loader-pulse {
+  from {
+    opacity: 0.7;
+    transform: translate(-50%, calc(-50% - 0.1rem)) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, calc(-50% - 0.1rem)) scale(1.02);
   }
 }
 
 @layer components {
-  .glass-effect {
-    @apply backdrop-blur-lg bg-white/5 border border-white/10;
+  .surface {
+    @apply rounded-xl border border-white/15 bg-black/50 transition-all duration-200;
   }
-  
-  .gradient-text {
-    @apply bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent;
+
+  .interactive-card {
+    @apply motion-safe:hover:-translate-y-1 motion-safe:hover:shadow-[0_14px_26px_rgba(0,0,0,0.35)];
   }
-  
-  .card-hover {
-    @apply transition-all duration-300 hover:scale-105 hover:shadow-2xl;
+
+  .interactive-link {
+    @apply transition-colors duration-200 hover:text-slate-200;
   }
-  
+
   .btn-primary {
-    @apply px-6 py-3 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 
-           text-white font-medium transition-all duration-300 
-           hover:from-cyan-600 hover:to-blue-700 
-           hover:shadow-lg hover:shadow-cyan-500/25;
+    @apply inline-flex items-center justify-center gap-2 rounded-none border-2 border-white bg-white px-4 py-2 font-bold uppercase tracking-wide text-black shadow-[0_0_14px_rgba(255,255,255,0.2)] transition-all duration-200 motion-safe:hover:-translate-y-0.5 motion-safe:hover:translate-x-0.5 hover:bg-slate-200 hover:shadow-[0_0_22px_rgba(255,255,255,0.35)];
   }
-  
+
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 rounded-none border-2 border-white/70 bg-black/50 px-4 py-2 font-bold uppercase tracking-wide text-white transition-all duration-200 motion-safe:hover:-translate-y-0.5 motion-safe:hover:translate-x-0.5 hover:bg-white/10 hover:shadow-[0_0_16px_rgba(255,255,255,0.18)];
+  }
+
+  .input-base {
+    @apply w-full rounded-none border-2 border-white/55 bg-black/60 px-3 py-2 text-sm text-white placeholder:text-slate-400 focus:border-white focus:shadow-[0_0_14px_rgba(255,255,255,0.16)] focus:outline-none;
+  }
+
+  .glass-effect {
+    @apply surface;
+  }
+
+  .card-hover {
+    @apply transition-all duration-200 motion-safe:hover:-translate-y-0.5 motion-safe:hover:translate-x-0.5;
+  }
+
+  .gradient-text {
+    @apply text-white;
+  }
+
   .btn-secondary {
-    @apply px-6 py-3 rounded-lg border border-cyan-500/30 
-           text-cyan-400 font-medium transition-all duration-300 
-           hover:bg-cyan-500/10 hover:border-cyan-500/50;
+    @apply btn-outline;
   }
+}
+
+/* For cursor-following glow effect */
+.glow-card {
+  position: relative;
+}
+
+.glow-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    circle at var(--mouse-x) var(--mouse-y),
+    rgba(255, 255, 255, 0.15) 0%,
+    rgba(255, 255, 255, 0) 25%
+  );
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none; /* Make sure it doesn't block interactions with the card */
+}
+
+.glow-card:hover::before {
+  opacity: 1;
 }

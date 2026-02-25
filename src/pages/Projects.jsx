@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { FiExternalLink, FiGithub, FiInfo, FiX } from 'react-icons/fi';
 import { supabase } from '../supabase/client';
 import toast from 'react-hot-toast';
+import { useLanguage } from '../i18n';
+import DStatusLoader from '../components/DStatusLoader';
+import { GlowProjectPageCard } from '../components/GlowProjectPageCard';
 
 export default function Projects() {
   const [projects, setProjects] = useState([]);
@@ -11,255 +13,153 @@ export default function Projects() {
   const [activeCategory, setActiveCategory] = useState('all');
   const [selectedProject, setSelectedProject] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { t } = useLanguage();
 
   useEffect(() => {
-    fetchProjects();
+    const fetchProjects = async () => {
+      try {
+        const { data, error } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
 
-    // Subscribe to real-time changes
-    const subscription = supabase
-      .channel('projects')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'projects',
-        },
-        (payload) => {
-          console.log('Projects updated:', payload);
-          fetchProjects(); // Re-fetch data when changes occur
-        }
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  const fetchProjects = async () => {
-    try {
-      const { data, error } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching projects:', error);
-        setProjects([]);
-      } else if (data && data.length > 0) {
-        setProjects(data);
-
-        // Extract unique categories
-        const uniqueCategories = [...new Set(data.map((p) => p.category))];
-        setCategories(uniqueCategories);
-        setFilteredProjects(data);
-      } else {
-        setProjects([]);
-        setFilteredProjects([]);
+        const projectData = data || [];
+        setProjects(projectData);
+        setFilteredProjects(projectData);
+        setCategories([...new Set(projectData.map((item) => item.category).filter(Boolean))]);
+      } catch (error) {
+        toast.error('Failed to load projects');
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error('Failed to load projects');
-      setProjects([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    fetchProjects();
+  }, []);
 
   const handleCategoryFilter = (category) => {
     setActiveCategory(category);
     if (category === 'all') {
       setFilteredProjects(projects);
-    } else {
-      setFilteredProjects(projects.filter((p) => p.category === category));
+      return;
     }
+    setFilteredProjects(projects.filter((project) => project.category === category));
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center pt-20">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500"></div>
-      </div>
-    );
-  }
+  const parseTags = (tags) => {
+    if (!tags) return [];
+    if (Array.isArray(tags)) return tags;
+    if (typeof tags === 'string') {
+      try {
+        const parsed = JSON.parse(tags);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (error) {
+        return tags
+          .split(',')
+          .map((tag) => tag.trim())
+          .filter(Boolean);
+      }
+      return tags
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter(Boolean);
+    }
+    return [];
+  };
 
   return (
-    <div className="pt-20 pb-12">
-      <div className="container mx-auto px-4 md:px-8">
-        {/* Header */}
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Projects</h1>
-          <p className="text-lg text-slate-400">Explore my latest work and projects</p>
-        </motion.div>
-
-        {/* Category Filter */}
-        {categories.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-12 flex flex-wrap gap-3">
-            <button onClick={() => handleCategoryFilter('all')} className={`px-4 py-2 rounded-full font-medium transition-all ${activeCategory === 'all' ? 'bg-cyan-500 text-white' : 'bg-white/5 text-slate-300 hover:bg-white/10'}`}>
-              All Projects
-            </button>
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => handleCategoryFilter(category)}
-                className={`px-4 py-2 rounded-full font-medium transition-all ${activeCategory === category ? 'bg-cyan-500 text-white' : 'bg-white/5 text-slate-300 hover:bg-white/10'}`}
-              >
-                {category}
-              </button>
-            ))}
-          </motion.div>
-        )}
-
-        {/* Projects Grid */}
-        {filteredProjects.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProjects.map((project, index) => (
-              <motion.div key={project.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: index * 0.1 }} className="group glass-effect rounded-2xl overflow-hidden card-hover">
-                {/* Image */}
-                <div className="relative aspect-video bg-gradient-to-br from-cyan-500/20 to-blue-500/20 overflow-hidden">
-                  {project.image_url ? (
-                    <img src={project.image_url} alt={project.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-6xl">📦</div>
-                  )}
-                </div>
-
-                {/* Content */}
-                <div className="p-6">
-                  {/* Category Badge */}
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400">{project.category}</span>
-                    <span className="text-xs text-slate-500">
-                      {new Date(project.created_at).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                      })}
-                    </span>
-                  </div>
-
-                  {/* Title */}
-                  <h3 className="text-xl font-semibold mb-2">{project.title}</h3>
-
-                  {/* Description */}
-                  <p className="text-slate-400 text-sm mb-4 line-clamp-2">{project.description}</p>
-
-                  {/* Tags */}
-                  {project.tags && (
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {(typeof project.tags === 'string' ? project.tags.split(',') : Array.isArray(project.tags) ? project.tags : []).slice(0, 3).map((tag, i) => (
-                        <span key={i} className="text-xs px-2 py-1 rounded bg-white/5 text-slate-400">
-                          {typeof tag === 'string' ? tag.trim() : tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Links */}
-                  <div className="flex gap-3 pt-4 border-t border-white/10">
-                    <button
-                      onClick={() => setSelectedProject(project)}
-                      className="flex items-center justify-center gap-2 flex-1 px-3 py-2 bg-white/5 hover:bg-white/10 
-                               text-slate-300 rounded-lg transition-colors text-sm"
-                    >
-                      <FiInfo className="w-4 h-4" />
-                      Detail
-                    </button>
-                    {project.project_url && (
-                      <a
-                        href={project.project_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 flex-1 px-3 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 
-                                 text-cyan-400 rounded-lg transition-colors text-sm"
-                      >
-                        <FiExternalLink className="w-4 h-4" />
-                        Live
-                      </a>
-                    )}
-                    {project.code && (
-                      <a
-                        href={project.code}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 flex-1 px-3 py-2 bg-white/5 hover:bg-white/10 
-                                 text-slate-300 rounded-lg transition-colors text-sm"
-                      >
-                        <FiGithub className="w-4 h-4" />
-                        Code
-                      </a>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        ) : (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20">
-            <div className="text-6xl mb-4">📭</div>
-            <h3 className="text-2xl font-semibold mb-2">No projects found</h3>
-            <p className="text-slate-400">Check back soon for new projects!</p>
-          </motion.div>
-        )}
+    <div className="relative overflow-hidden pb-16 pt-10 md:pb-20 md:pt-14">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute left-[-12rem] top-[-8rem] h-[28rem] w-[28rem] rounded-full bg-white/[0.03] blur-3xl" />
+        <div className="absolute bottom-[-16rem] right-[-10rem] h-[30rem] w-[30rem] rounded-full bg-[#ff7a00]/[0.05] blur-3xl" />
       </div>
 
-      {/* Project Detail Modal */}
-      <AnimatePresence>
-        {selectedProject && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedProject(null)}>
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl p-6 md:p-8 border border-white/10 bg-[#0f172a] shadow-2xl"
-            >
-              <button onClick={() => setSelectedProject(null)} className="absolute top-4 right-4 p-2 rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors z-10">
-                <FiX size={24} />
-              </button>
+      <div className="container relative mx-auto px-4 md:px-8">
+        <section className="mb-8 md:mb-12">
+          <p className="mb-3 text-xs uppercase tracking-[0.38em] text-slate-400">{t('projects.selectedWork')}</p>
+          <h1 className="text-3xl font-medium tracking-[0.01em] text-white md:text-5xl">{t('projects.title')}</h1>
+          <div className="mt-3 h-px w-16 bg-white/55" />
+        </section>
 
-              <div className="aspect-video w-full rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 mb-6 overflow-hidden relative">
-                {selectedProject.image_url ? (
-                  <img src={selectedProject.image_url} alt={selectedProject.title} className="absolute inset-0 w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-6xl">📦</div>
-                )}
+        <section className="mb-8 grid gap-4 lg:grid-cols-[130px_1fr]">
+          <aside className="hidden lg:block">
+            <p className="mb-7 text-[10px] uppercase tracking-[0.28em] text-slate-500 [writing-mode:vertical-rl] [transform:rotate(180deg)]">{t('projects.designing')}</p>
+            <p className="mb-7 text-[10px] uppercase tracking-[0.28em] text-slate-500 [writing-mode:vertical-rl] [transform:rotate(180deg)]">{t('projects.development')}</p>
+            <p className="text-[10px] uppercase tracking-[0.28em] text-slate-500 [writing-mode:vertical-rl] [transform:rotate(180deg)]">{t('projects.marketing')}</p>
+          </aside>
+
+          <div>
+            {categories.length > 0 && (
+              <div className="mb-4 flex flex-wrap gap-2">
+                <button
+                  onClick={() => handleCategoryFilter('all')}
+                  className={`rounded-full border px-4 py-1.5 text-[11px] uppercase tracking-[0.18em] transition-colors ${activeCategory === 'all' ? 'border-white/70 text-white' : 'border-white/20 text-slate-400 hover:border-white/45 hover:text-slate-200'}`}
+                >
+                  {t('projects.all')}
+                </button>
+                {categories.map((category) => (
+                  <button
+                    key={category}
+                    onClick={() => handleCategoryFilter(category)}
+                    className={`rounded-full border px-4 py-1.5 text-[11px] uppercase tracking-[0.18em] transition-colors ${activeCategory === category ? 'border-white/70 text-white' : 'border-white/20 text-slate-400 hover:border-white/45 hover:text-slate-200'}`}
+                  >
+                    {category.replaceAll('-', ' ')}
+                  </button>
+                ))}
               </div>
+            )}
 
-              <div className="flex flex-wrap items-center gap-4 mb-6">
-                <span className="px-4 py-1.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-medium">{selectedProject.category}</span>
-                <span className="text-slate-400">{new Date(selectedProject.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+            {loading ? (
+              <div className="rounded-xl border border-white/15 bg-black/50 p-6">
+                <DStatusLoader label={t('projects.loading')} />
               </div>
-
-              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">{selectedProject.title}</h2>
-
-              <div className="prose prose-invert max-w-none mb-8">
-                <p className="text-slate-300 text-lg leading-relaxed whitespace-pre-line">{selectedProject.description}</p>
+            ) : filteredProjects.length > 0 ? (
+              <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                {filteredProjects.map((project) => (
+                  <GlowProjectPageCard key={project.id} project={project} onSelect={setSelectedProject} />
+                ))}
               </div>
+            ) : (
+              <div className="rounded-xl border border-white/15 bg-black/50 p-6 text-sm text-slate-400">{t('projects.noProjects')}</div>
+            )}
+          </div>
+        </section>
+      </div>
 
-              {selectedProject.tags && (
-                <div className="flex flex-wrap gap-2 mb-8">
-                  {(typeof selectedProject.tags === 'string' ? selectedProject.tags.split(',') : Array.isArray(selectedProject.tags) ? selectedProject.tags : []).map((tag, i) => (
-                    <span key={i} className="text-sm px-3 py-1 rounded-full bg-white/5 text-slate-300 border border-white/10">
-                      {typeof tag === 'string' ? tag.trim() : tag}
-                    </span>
-                  ))}
-                </div>
+      <p className="pointer-events-none absolute bottom-[-2.5rem] left-0 text-5xl font-black uppercase tracking-tight text-white/[0.04] md:text-8xl">THE CRE8TIVE</p>
+
+      {selectedProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 md:p-6" onClick={() => setSelectedProject(null)}>
+          <div className="relative w-full max-w-3xl rounded-xl border border-white/20 bg-[#080808] p-6 md:p-8" onClick={(event) => event.stopPropagation()}>
+            <button onClick={() => setSelectedProject(null)} className="absolute right-4 top-4 rounded-full border border-white/20 p-2 text-slate-300 transition-colors hover:border-white/40 hover:text-white">
+              <FiX className="h-4 w-4" />
+            </button>
+            <p className="mb-2 flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-slate-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#ff7a00]" />
+              {selectedProject.category || t('common.uncategorized')}
+            </p>
+            <h3 className="mb-4 text-3xl font-medium text-white">{selectedProject.title}</h3>
+            <p className="mb-6 whitespace-pre-line text-sm leading-relaxed text-slate-300">{selectedProject.description}</p>
+
+            <div className="flex flex-wrap gap-3">
+              {selectedProject.project_url && (
+                <a href={selectedProject.project_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 border border-white/25 px-4 py-2 text-sm text-white transition-colors hover:border-white/60">
+                  <FiExternalLink className="h-4 w-4" /> {t('projects.viewLiveProject')}
+                </a>
               )}
-
-              <div className="flex flex-wrap gap-4">
-                {selectedProject.project_url && (
-                  <a href={selectedProject.project_url} target="_blank" rel="noopener noreferrer" className="btn-primary flex items-center gap-2 px-6 py-2 rounded-lg">
-                    <FiExternalLink /> View Live Project
-                  </a>
-                )}
-                {selectedProject.code && (
-                  <a href={selectedProject.code} target="_blank" rel="noopener noreferrer" className="px-6 py-2 rounded-lg border border-white/10 hover:bg-white/5 transition-colors flex items-center gap-2 text-white">
-                    <FiGithub /> View Code
-                  </a>
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              {selectedProject.code && (
+                <a
+                  href={selectedProject.code}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 border border-white/15 px-4 py-2 text-sm text-slate-300 transition-colors hover:border-white/45 hover:text-white"
+                >
+                  <FiGithub className="h-4 w-4" /> {t('projects.viewCode')}
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
