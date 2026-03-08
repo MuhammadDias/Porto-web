@@ -26,9 +26,9 @@ export const GlowProjectPageCard = ({ project, onSelect }) => {
   return (
     <article
       ref={glowRef}
-      className="glow-card group overflow-hidden rounded-xl transition-transform duration-300"
+      className="glow-card project-card group overflow-hidden rounded-xl border border-white/25 bg-black/50 p-3 shadow-[0_10px_22px_rgba(0,0,0,0.22)] transition-transform duration-300"
     >
-      <div className="mb-4 h-56 overflow-hidden rounded-xl border border-white/15 bg-zinc-900 md:h-60">
+      <div className="mb-4 h-56 overflow-hidden rounded-xl border border-white/20 bg-zinc-900 md:h-60">
         {project.image_url ? (
           <img src={project.image_url} alt={project.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
         ) : null}
@@ -54,7 +54,7 @@ export const GlowProjectPageCard = ({ project, onSelect }) => {
         </div>
 
         <div className="flex items-center gap-4 text-sm">
-          <button onClick={() => onSelect(project)} className="inline-flex items-center gap-2 text-slate-100 transition-colors hover:text-[#ff9a3c]">
+          <button onClick={(event) => onSelect(project, event)} className="project-action-primary inline-flex items-center gap-2 transition-colors">
             <FiInfo className="h-4 w-4" /> {t('projects.knowMore')}
           </button>
           {project.project_url && (

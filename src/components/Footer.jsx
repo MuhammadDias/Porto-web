@@ -42,7 +42,7 @@ const Footer = () => {
                 href={item.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-9 w-9 items-center justify-center rounded-none border border-white/25 text-zinc-300 shadow-[0_0_8px_rgba(255,255,255,0.08)] transition-all duration-200 motion-safe:hover:-translate-y-0.5 motion-safe:hover:translate-x-0.5 hover:border-white/50 hover:text-white hover:shadow-[0_0_16px_rgba(255,255,255,0.2)]"
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/25 text-zinc-300 shadow-[0_0_8px_rgba(255,255,255,0.08)] transition-all duration-200 motion-safe:hover:-translate-y-0.5 motion-safe:hover:translate-x-0.5 hover:border-white/50 hover:text-white hover:shadow-[0_0_16px_rgba(255,255,255,0.2)]"
                 aria-label={item.label}
               >
                 <Icon className="h-4 w-4" />

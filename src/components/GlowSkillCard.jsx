@@ -15,7 +15,7 @@ export const GlowSkillCard = ({ skill }) => {
       </div>
       <div className="h-2 rounded-full bg-slate-800">
         <div
-          className="h-2 rounded-full bg-white transition-all duration-300 group-hover:bg-[#ff9a3c]"
+          className="h-2 rounded-full bg-slate-600 transition-all duration-300 group-hover:bg-slate-700"
           style={{ width: `${skill.level || 0}%` }}
         />
       </div>

@@ -64,17 +64,20 @@ const AdminDashboard = () => {
     setLoading(true);
     try {
       if (activeTab === 'projects') {
-        const { data } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
+        const { data, error } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
         setProjects(data || []);
       } else if (activeTab === 'experiences') {
-        const { data } = await supabase.from('experiences').select('*').order('start_date', { ascending: false });
+        const { data, error } = await supabase.from('experiences').select('*').order('start_date', { ascending: false });
+        if (error) throw error;
         setExperiences(data || []);
       } else {
-        const { data } = await supabase.from('skills').select('*').order('order', { ascending: true });
+        const { data, error } = await supabase.from('skills').select('*').order('order', { ascending: true });
+        if (error) throw error;
         setSkills(data || []);
       }
     } catch (error) {
-      toast.error('Error fetching data');
+      toast.error(error.message || 'Error fetching data');
     } finally {
       setLoading(false);
     }
@@ -94,11 +97,11 @@ const AdminDashboard = () => {
       };
 
       if (editingItem) {
-        const { error } = await supabase.from('projects').update(projectData).eq('id', editingItem);
+        const { error } = await supabase.from('projects').update(projectData).eq('id', editingItem).select('id').single();
         if (error) throw error;
         toast.success('Project updated');
       } else {
-        const { error } = await supabase.from('projects').insert([projectData]);
+        const { error } = await supabase.from('projects').insert([projectData]).select('id').single();
         if (error) throw error;
         toast.success('Project added');
       }
@@ -123,11 +126,11 @@ const AdminDashboard = () => {
       };
 
       if (editingItem) {
-        const { error } = await supabase.from('experiences').update(payload).eq('id', editingItem);
+        const { error } = await supabase.from('experiences').update(payload).eq('id', editingItem).select('id').single();
         if (error) throw error;
         toast.success('Experience updated');
       } else {
-        const { error } = await supabase.from('experiences').insert([payload]);
+        const { error } = await supabase.from('experiences').insert([payload]).select('id').single();
         if (error) throw error;
         toast.success('Experience added');
       }
@@ -147,11 +150,11 @@ const AdminDashboard = () => {
     setLoading(true);
     try {
       if (editingItem) {
-        const { error } = await supabase.from('skills').update(skillForm).eq('id', editingItem);
+        const { error } = await supabase.from('skills').update(skillForm).eq('id', editingItem).select('id').single();
         if (error) throw error;
         toast.success('Skill updated');
       } else {
-        const { error } = await supabase.from('skills').insert([skillForm]);
+        const { error } = await supabase.from('skills').insert([skillForm]).select('id').single();
         if (error) throw error;
         toast.success('Skill added');
       }

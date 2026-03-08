@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FiArrowRight, FiX } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabase/client';
 import { useLanguage } from '../i18n';
+import ModalPortal from '../components/ModalPortal';
 
 const dummySkills = [
   { id: 1, name: 'React', level: 90 },
@@ -37,12 +38,14 @@ export default function Home() {
   const [skills, setSkills] = useState([]);
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
+  const [modalOrigin, setModalOrigin] = useState({ x: 50, y: 8 });
+  const modalContentRef = useRef(null);
   const { t } = useLanguage();
 
   useEffect(() => {
     const fetchSkills = async () => {
       try {
-        const { data } = await supabase.from('skills').select('*').order('order', { ascending: true }).limit(6);
+        const { data } = await supabase.from('skills').select('*').order('order', { ascending: true });
         setSkills(data && data.length > 0 ? data : dummySkills);
       } catch (error) {
         setSkills(dummySkills);
@@ -61,6 +64,42 @@ export default function Home() {
     fetchSkills();
     fetchProjects();
   }, []);
+
+  useEffect(() => {
+    if (!selectedProject) return undefined;
+
+    const originalStyles = {
+      bodyOverflow: document.body.style.overflow,
+      htmlOverflow: document.documentElement.style.overflow,
+    };
+
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = originalStyles.bodyOverflow;
+      document.documentElement.style.overflow = originalStyles.htmlOverflow;
+    };
+  }, [selectedProject]);
+
+  useEffect(() => {
+    if (selectedProject && modalContentRef.current) {
+      modalContentRef.current.scrollTop = 0;
+    }
+  }, [selectedProject]);
+
+  const handleOpenProjectDetail = (project, event) => {
+    if (event?.currentTarget) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const x = ((rect.left + rect.width / 2) / window.innerWidth) * 100;
+      const y = ((rect.top + rect.height / 2) / window.innerHeight) * 100;
+      setModalOrigin({
+        x: Math.max(5, Math.min(95, x)),
+        y: Math.max(5, Math.min(95, y)),
+      });
+    }
+    setSelectedProject(project);
+  };
 
   const ribbonText = t('home.ribbon');
   const ribbonItems = `${ribbonText}${ribbonText}${ribbonText}${ribbonText}`;
@@ -146,25 +185,32 @@ export default function Home() {
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {projects.map((project) => (
-              <GlowProjectCard key={project.id} project={project} onSelect={setSelectedProject} />
+              <GlowProjectCard key={project.id} project={project} onSelect={handleOpenProjectDetail} />
             ))}
           </div>
         </section>
       </div>
 
       {selectedProject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setSelectedProject(null)}>
-          <div className="surface relative w-full max-w-2xl rounded-xl p-6" onClick={(event) => event.stopPropagation()}>
-            <button onClick={() => setSelectedProject(null)} className="absolute right-4 top-4 rounded-md p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
-              <FiX className="h-5 w-5" />
-            </button>
-            <p className="mb-2 text-sm text-white">{selectedProject.category}</p>
-            <h3 className="mb-3 text-2xl font-semibold text-white">{selectedProject.title}</h3>
-            <p className="text-slate-300">{selectedProject.description}</p>
+        <ModalPortal>
+          <div className="modal-overlay fixed inset-0 z-[1000] flex items-start justify-center bg-black/70 p-4 pt-16 md:pt-20" onClick={() => setSelectedProject(null)}>
+            <div
+              className="modal-surface modal-surface-pull surface relative w-full max-w-2xl overflow-hidden rounded-xl"
+              style={{ '--pull-origin-x': `${modalOrigin.x}%`, '--pull-origin-y': `${modalOrigin.y}%` }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <button onClick={() => setSelectedProject(null)} className="absolute right-4 top-4 rounded-md p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
+                <FiX className="h-5 w-5" />
+              </button>
+              <div ref={modalContentRef} className="max-h-[80vh] overflow-y-auto p-6 pr-5">
+                <p className="mb-2 text-sm text-white">{selectedProject.category}</p>
+                <h3 className="mb-3 text-2xl font-semibold text-white">{selectedProject.title}</h3>
+                <p className="whitespace-pre-line text-slate-300">{selectedProject.description}</p>
+              </div>
+            </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
     </div>
   );
 }
-

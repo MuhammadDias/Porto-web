@@ -1,5 +1,5 @@
-const CACHE_NAME = 'porto-web-v1';
-const CORE_ASSETS = ['/', '/index.html', '/offline.html', '/404.html', '/405.html', '/500.html'];
+const CACHE_NAME = 'porto-web-v2';
+const CORE_ASSETS = ['/', '/index.html', '/offline.html'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -16,16 +16,14 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
+  const requestUrl = new URL(event.request.url);
+  const isSameOrigin = requestUrl.origin === self.location.origin;
   const acceptsHtml = event.request.headers.get('accept')?.includes('text/html');
 
   if (acceptsHtml) {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          if (response.status === 404) return caches.match('/404.html');
-          if (response.status === 405) return caches.match('/405.html');
-          if (response.status >= 500) return caches.match('/500.html');
-
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
           return response;
@@ -36,6 +34,11 @@ self.addEventListener('fetch', (event) => {
           return caches.match('/offline.html');
         })
     );
+    return;
+  }
+
+  if (!isSameOrigin) {
+    event.respondWith(fetch(event.request));
     return;
   }
 

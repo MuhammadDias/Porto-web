@@ -16,14 +16,17 @@ import ProtectedRoute from './admin/ProtectedRoute';
 import Login from './admin/Login';
 import TestDither from './pages/TestDither';
 import { LanguageProvider, useLanguage } from './i18n';
+import { ThemeProvider, useTheme } from './theme';
 import './index.css';
 import { AnimatePresence } from 'framer-motion';
 import { AnimatedPage } from './components/AnimatedPage';
+import ErrorPage from './components/ErrorPage';
 
 function AppContent() {
   const location = useLocation();
   const isAdminPage = location.pathname.startsWith('/admin');
   const { t } = useLanguage();
+  const { theme } = useTheme();
   const [booting, setBooting] = useState(true);
   const [loaderSpeedMs, setLoaderSpeedMs] = useState(1100);
 
@@ -66,14 +69,14 @@ function AppContent() {
 
   if (booting) {
     return (
-      <div className="min-h-screen bg-black px-4">
+      <div className="min-h-screen px-4">
         <DStatusLoader fullScreen label={t('common.loadingContent')} speedMs={loaderSpeedMs} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black flex flex-col">
+    <div className="app-shell min-h-screen flex flex-col">
       {!isAdminPage && <Navbar />}
       <main className="flex-1">
         <AnimatePresence mode="wait">
@@ -85,9 +88,8 @@ function AppContent() {
             <Route path="/project" element={<AnimatedPage><Project /></AnimatedPage>} />
             <Route path="/contact" element={<AnimatedPage><Contact /></AnimatedPage>} />
             <Route path="/offline" element={<AnimatedPage><StatusPage code="OFFLINE" title={t('status.offlineTitle')} message={t('status.offlineMessage')} retryLabel={t('status.retry')} homeLabel={t('common.backHome')} /></AnimatedPage>} />
-            <Route path="/404" element={<AnimatedPage><StatusPage code="404" title={t('status.notFoundTitle')} message={t('status.notFoundMessage')} retryLabel={t('status.retry')} homeLabel={t('common.backHome')} /></AnimatedPage>} />
-            <Route path="/405" element={<AnimatedPage><StatusPage code="405" title={t('status.methodTitle')} message={t('status.methodMessage')} retryLabel={t('status.retry')} homeLabel={t('common.backHome')} /></AnimatedPage>} />
-            <Route path="/500" element={<AnimatedPage><StatusPage code="500" title={t('status.serverTitle')} message={t('status.serverMessage')} retryLabel={t('status.retry')} homeLabel={t('common.backHome')} /></AnimatedPage>} />
+            <Route path="/405" element={<ErrorPage code="405" />} />
+            <Route path="/500" element={<ErrorPage code="500" />} />
             <Route path="/admin/login" element={<AnimatedPage><Login /></AnimatedPage>} />
             <Route path="/test" element={<AnimatedPage><TestDither /></AnimatedPage>} />
             <Route
@@ -98,7 +100,7 @@ function AppContent() {
                 </ProtectedRoute>
               }
             />
-            <Route path="*" element={<Navigate to="/404" replace />} />
+            <Route path="*" element={<ErrorPage code="404" />} />
           </Routes>
         </AnimatePresence>
       </main>
@@ -107,9 +109,9 @@ function AppContent() {
         position="top-right"
         toastOptions={{
           style: {
-            background: '#000000',
-            color: '#ffffff',
-            border: '2px solid rgba(255,255,255,0.65)',
+            background: theme === 'light' ? '#ffffff' : '#000000',
+            color: theme === 'light' ? '#0f172a' : '#ffffff',
+            border: theme === 'light' ? '2px solid rgba(15,23,42,0.25)' : '2px solid rgba(255,255,255,0.65)',
           },
         }}
       />
@@ -119,11 +121,13 @@ function AppContent() {
 
 function App() {
   return (
-    <LanguageProvider>
-      <Router>
-        <AppContent />
-      </Router>
-    </LanguageProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </LanguageProvider>
+    </ThemeProvider>
   );
 }
 

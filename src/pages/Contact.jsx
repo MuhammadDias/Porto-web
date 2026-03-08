@@ -21,7 +21,8 @@ export default function Contact() {
     name: '',
     email: '',
     message: '',
-    interest: 'ui-ux-design',
+    interests: ['ui-ux-design'],
+    otherInterest: '',
   });
   const [loading, setLoading] = useState(false);
   const { t } = useLanguage();
@@ -46,8 +47,40 @@ export default function Contact() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const toggleInterest = (interestId) => {
+    setFormData((prev) => {
+      const exists = prev.interests.includes(interestId);
+      const nextInterests = exists ? prev.interests.filter((id) => id !== interestId) : [...prev.interests, interestId];
+      const clearOtherText = exists && interestId === 'other';
+      return {
+        ...prev,
+        interests: nextInterests,
+        otherInterest: clearOtherText ? '' : prev.otherInterest,
+      };
+    });
+  };
+
+  const selectedInterestsText = () => {
+    const labels = interests.filter((item) => formData.interests.includes(item.id)).map((item) => item.label);
+    if (formData.interests.includes('other') && formData.otherInterest.trim()) {
+      return [...labels.filter((label) => label !== t('contact.interests.other')), `${t('contact.interests.other')}: ${formData.otherInterest.trim()}`].join(', ');
+    }
+    return labels.join(', ');
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
+
+    if (formData.interests.length === 0) {
+      toast.error(t('contact.selectInterest'));
+      return;
+    }
+
+    if (formData.interests.includes('other') && !formData.otherInterest.trim()) {
+      toast.error(t('contact.otherRequired'));
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -55,7 +88,7 @@ export default function Contact() {
         to_email: 'diasizzat222@gmail.com',
         from_name: formData.name,
         from_email: formData.email,
-        interest: formData.interest,
+        interest: selectedInterestsText(),
         message: formData.message,
       });
 
@@ -65,7 +98,8 @@ export default function Contact() {
           name: '',
           email: '',
           message: '',
-          interest: 'ui-ux-design',
+          interests: ['ui-ux-design'],
+          otherInterest: '',
         });
       }
     } catch (error) {
@@ -76,8 +110,13 @@ export default function Contact() {
   };
 
   return (
-    <div className="pb-12 pt-8 md:pb-14 md:pt-12">
-      <div className="container mx-auto grid gap-4 px-4 md:gap-6 md:grid-cols-2 md:px-8">
+    <div className="relative overflow-hidden pb-12 pt-8 md:pb-14 md:pt-12">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute left-[-8rem] top-[-4rem] h-72 w-72 rounded-full bg-white/[0.04] blur-3xl" />
+        <div className="absolute bottom-[-8rem] right-[-8rem] h-80 w-80 rounded-full bg-[#ff7a00]/[0.05] blur-3xl" />
+      </div>
+
+      <div className="container relative mx-auto grid gap-4 px-4 md:grid-cols-2 md:gap-6 md:px-8">
         <section className="surface interactive-card p-5 md:p-8">
           <h1 className="mb-3 text-3xl font-semibold text-white md:text-4xl">{t('contact.title')}</h1>
           <p className="mb-5 text-sm text-slate-300 md:mb-6 md:text-base">{t('contact.subtitle')}</p>
@@ -86,7 +125,7 @@ export default function Contact() {
             {contactInfo.map((item) => {
               const Icon = item.icon;
               return (
-                <a key={item.label} href={item.href} className="flex items-start gap-3 rounded-none border border-slate-800 p-3 transition-colors hover:bg-slate-900">
+                <a key={item.label} href={item.href} className="flex items-start gap-3 rounded-xl border border-slate-800 bg-black/30 p-3 transition-colors hover:bg-slate-900">
                   <Icon className="mt-0.5 h-4 w-4 text-white" />
                   <div>
                     <p className="text-xs text-slate-400">{item.label}</p>
@@ -106,7 +145,7 @@ export default function Contact() {
                   href={item.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex h-9 w-9 items-center justify-center rounded-none border border-slate-700 text-slate-300 transition-all duration-200 motion-safe:hover:-translate-y-0.5 motion-safe:hover:translate-x-0.5 hover:border-slate-500 hover:text-white"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-700 bg-black/30 text-slate-300 transition-all duration-200 motion-safe:hover:-translate-y-0.5 motion-safe:hover:translate-x-0.5 hover:border-slate-500 hover:text-white"
                   aria-label={item.label}
                 >
                   <Icon className="h-4 w-4" />
@@ -121,19 +160,32 @@ export default function Contact() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="mb-2 block text-sm text-slate-300">{t('contact.interest')}</label>
+              <p className="mb-3 text-xs text-slate-400">{t('contact.selectMultiple')}</p>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {interests.map((option) => (
                   <button
                     key={option.id}
                     type="button"
-                    onClick={() => setFormData((prev) => ({ ...prev, interest: option.id }))}
-                    className={`rounded-none border px-3 py-2 text-xs transition-colors ${formData.interest === option.id ? 'border-white bg-white text-slate-950' : 'border-slate-700 text-slate-300 hover:bg-slate-900'}`}
+                    onClick={() => toggleInterest(option.id)}
+                    className={`contact-interest-chip rounded-xl border px-3 py-2 text-xs transition-colors ${formData.interests.includes(option.id) ? 'contact-interest-chip-active border-white bg-white text-slate-950' : 'border-slate-700 bg-black/30 text-slate-300 hover:bg-slate-900'}`}
                   >
                     {option.label}
                   </button>
                 ))}
               </div>
             </div>
+
+            {formData.interests.includes('other') && (
+              <input
+                type="text"
+                name="otherInterest"
+                placeholder={t('contact.otherPlaceholder')}
+                value={formData.otherInterest}
+                onChange={handleChange}
+                required
+                className="input-base"
+              />
+            )}
 
             <input type="text" name="name" placeholder={t('contact.yourName')} value={formData.name} onChange={handleChange} required className="input-base" />
             <input type="email" name="email" placeholder={t('contact.yourEmail')} value={formData.email} onChange={handleChange} required className="input-base" />

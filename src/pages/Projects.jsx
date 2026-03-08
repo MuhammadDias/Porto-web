@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FiExternalLink, FiGithub, FiInfo, FiX } from 'react-icons/fi';
 import { supabase } from '../supabase/client';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../i18n';
 import DStatusLoader from '../components/DStatusLoader';
 import { GlowProjectPageCard } from '../components/GlowProjectPageCard';
+import ModalPortal from '../components/ModalPortal';
 
 export default function Projects() {
   const [projects, setProjects] = useState([]);
@@ -12,6 +13,8 @@ export default function Projects() {
   const [categories, setCategories] = useState([]);
   const [activeCategory, setActiveCategory] = useState('all');
   const [selectedProject, setSelectedProject] = useState(null);
+  const [modalOrigin, setModalOrigin] = useState({ x: 50, y: 8 });
+  const modalContentRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const { t } = useLanguage();
 
@@ -34,6 +37,42 @@ export default function Projects() {
 
     fetchProjects();
   }, []);
+
+  useEffect(() => {
+    if (!selectedProject) return undefined;
+
+    const originalStyles = {
+      bodyOverflow: document.body.style.overflow,
+      htmlOverflow: document.documentElement.style.overflow,
+    };
+
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = originalStyles.bodyOverflow;
+      document.documentElement.style.overflow = originalStyles.htmlOverflow;
+    };
+  }, [selectedProject]);
+
+  useEffect(() => {
+    if (selectedProject && modalContentRef.current) {
+      modalContentRef.current.scrollTop = 0;
+    }
+  }, [selectedProject]);
+
+  const handleOpenProjectDetail = (project, event) => {
+    if (event?.currentTarget) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const x = ((rect.left + rect.width / 2) / window.innerWidth) * 100;
+      const y = ((rect.top + rect.height / 2) / window.innerHeight) * 100;
+      setModalOrigin({
+        x: Math.max(5, Math.min(95, x)),
+        y: Math.max(5, Math.min(95, y)),
+      });
+    }
+    setSelectedProject(project);
+  };
 
   const handleCategoryFilter = (category) => {
     setActiveCategory(category);
@@ -114,7 +153,7 @@ export default function Projects() {
             ) : filteredProjects.length > 0 ? (
               <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
                 {filteredProjects.map((project) => (
-                  <GlowProjectPageCard key={project.id} project={project} onSelect={setSelectedProject} />
+                  <GlowProjectPageCard key={project.id} project={project} onSelect={handleOpenProjectDetail} />
                 ))}
               </div>
             ) : (
@@ -127,39 +166,46 @@ export default function Projects() {
       <p className="pointer-events-none absolute bottom-[-2.5rem] left-0 text-5xl font-black uppercase tracking-tight text-white/[0.04] md:text-8xl">THE CRE8TIVE</p>
 
       {selectedProject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 md:p-6" onClick={() => setSelectedProject(null)}>
-          <div className="relative w-full max-w-3xl rounded-xl border border-white/20 bg-[#080808] p-6 md:p-8" onClick={(event) => event.stopPropagation()}>
-            <button onClick={() => setSelectedProject(null)} className="absolute right-4 top-4 rounded-full border border-white/20 p-2 text-slate-300 transition-colors hover:border-white/40 hover:text-white">
-              <FiX className="h-4 w-4" />
-            </button>
-            <p className="mb-2 flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-slate-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#ff7a00]" />
-              {selectedProject.category || t('common.uncategorized')}
-            </p>
-            <h3 className="mb-4 text-3xl font-medium text-white">{selectedProject.title}</h3>
-            <p className="mb-6 whitespace-pre-line text-sm leading-relaxed text-slate-300">{selectedProject.description}</p>
+        <ModalPortal>
+          <div className="modal-overlay project-modal-overlay fixed inset-0 z-[1000] flex items-start justify-center bg-black/80 p-3 pt-16 md:p-6 md:pt-20" onClick={() => setSelectedProject(null)}>
+            <div
+              className="modal-surface modal-surface-pull project-modal-surface relative w-full max-w-3xl overflow-hidden rounded-xl border border-white/20"
+              style={{ '--pull-origin-x': `${modalOrigin.x}%`, '--pull-origin-y': `${modalOrigin.y}%` }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <button onClick={() => setSelectedProject(null)} className="absolute right-4 top-4 rounded-full border border-white/20 p-2 text-slate-300 transition-colors hover:border-white/40 hover:text-white">
+                <FiX className="h-4 w-4" />
+              </button>
+              <div ref={modalContentRef} className="max-h-[85vh] overflow-y-auto p-6 pr-5 md:p-8 md:pr-7">
+                <p className="mb-2 flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-slate-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#ff7a00]" />
+                  {selectedProject.category || t('common.uncategorized')}
+                </p>
+                <h3 className="mb-4 text-3xl font-medium text-white">{selectedProject.title}</h3>
+                <p className="mb-6 whitespace-pre-line text-sm leading-relaxed text-slate-300">{selectedProject.description}</p>
 
-            <div className="flex flex-wrap gap-3">
-              {selectedProject.project_url && (
-                <a href={selectedProject.project_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 border border-white/25 px-4 py-2 text-sm text-white transition-colors hover:border-white/60">
-                  <FiExternalLink className="h-4 w-4" /> {t('projects.viewLiveProject')}
-                </a>
-              )}
-              {selectedProject.code && (
-                <a
-                  href={selectedProject.code}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 border border-white/15 px-4 py-2 text-sm text-slate-300 transition-colors hover:border-white/45 hover:text-white"
-                >
-                  <FiGithub className="h-4 w-4" /> {t('projects.viewCode')}
-                </a>
-              )}
+                <div className="flex flex-wrap gap-3">
+                  {selectedProject.project_url && (
+                    <a href={selectedProject.project_url} target="_blank" rel="noopener noreferrer" className="project-modal-link inline-flex items-center gap-2 border border-white/25 px-4 py-2 text-sm text-white transition-colors hover:border-white/60">
+                      <FiExternalLink className="h-4 w-4" /> {t('projects.viewLiveProject')}
+                    </a>
+                  )}
+                  {selectedProject.code && (
+                    <a
+                      href={selectedProject.code}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="project-modal-link inline-flex items-center gap-2 border border-white/15 px-4 py-2 text-sm text-slate-300 transition-colors hover:border-white/45 hover:text-white"
+                    >
+                      <FiGithub className="h-4 w-4" /> {t('projects.viewCode')}
+                    </a>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
     </div>
   );
 }
-
