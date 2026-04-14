@@ -33,10 +33,12 @@ const dummyProjects = [
 
 import { GlowProjectCard } from '../components/GlowProjectCard';
 import { GlowSkillCard } from '../components/GlowSkillCard';
+import { getProfile } from '../supabase/api';
 
 export default function Home() {
   const [skills, setSkills] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [profile, setProfile] = useState(null);
   const [selectedProject, setSelectedProject] = useState(null);
   const [modalOrigin, setModalOrigin] = useState({ x: 50, y: 8 });
   const modalContentRef = useRef(null);
@@ -61,8 +63,20 @@ export default function Home() {
       }
     };
 
+    const fetchProfileData = async () => {
+      try {
+        // For a portfolio, we usually fetch the first profile found or a specific admin ID
+        // Here we just fetch the first one to make it dynamic for the owner
+        const { data } = await supabase.from('profiles').select('*').limit(1).single();
+        if (data) setProfile(data);
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      }
+    };
+
     fetchSkills();
     fetchProjects();
+    fetchProfileData();
   }, []);
 
   useEffect(() => {
@@ -99,6 +113,8 @@ export default function Home() {
       });
     }
     setSelectedProject(project);
+    // Track view
+    import('../supabase/api').then(api => api.incrementViews(project.id));
   };
 
   const ribbonText = t('home.ribbon');
@@ -108,7 +124,11 @@ export default function Home() {
     <div className="home-page pb-12 pt-8 md:pb-14 md:pt-12">
       <section className="relative overflow-hidden bg-black pb-24 pt-8 md:pb-32 md:pt-12">
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -left-8 top-24 text-[120px] font-semibold leading-none text-white/[0.05] md:text-[300px]">d</div>
+          <div className="absolute -left-8 top-24 text-[120px] font-semibold leading-none text-white/[0.05] md:text-[300px]">
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="" className="h-full w-full object-cover opacity-20 grayscale" />
+            ) : 'd'}
+          </div>
           <p className="absolute bottom-0 left-0 text-3xl font-semibold uppercase tracking-tight text-white/[0.05] md:text-7xl">THE CRE8TIVE</p>
         </div>
 
@@ -123,11 +143,13 @@ export default function Home() {
             <div>
               <p className="mb-3 text-sm uppercase tracking-[0.25em] text-slate-300">{t('home.availability')}</p>
               <h1 className="mb-4 max-w-4xl text-4xl font-medium leading-tight text-white sm:text-5xl md:text-7xl">
-                {t('home.headline')}
+                {profile?.name || t('home.headline')}
                 <br />
-                {t('home.role')}
+                {profile?.bio?.split('\n')[0] || t('home.role')}
               </h1>
-              <p className="mb-7 max-w-2xl text-sm text-slate-300 md:text-base">{t('home.description')}</p>
+              <p className="mb-7 max-w-2xl text-sm text-slate-300 md:text-base">
+                {profile?.bio || t('home.description')}
+              </p>
               <div className="flex flex-wrap gap-3">
                 <Link to="/projects" className="inline-flex items-center gap-2 border border-white/35 px-5 py-2.5 text-sm uppercase tracking-[0.15em] text-white transition-colors hover:border-white/60">
                   {t('home.viewProjects')} <FiArrowRight className="h-4 w-4" />

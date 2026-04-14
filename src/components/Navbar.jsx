@@ -29,6 +29,12 @@ const Navbar = () => {
       setUser(currentUser);
     };
     getUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -91,6 +97,16 @@ const Navbar = () => {
               {t(item.key)}
             </Link>
           ))}
+          {user && (
+            <Link
+              to="/saved-projects"
+              className={`nav-pill rounded-full px-4 py-1.5 text-sm uppercase tracking-wide transition-colors ${
+                location.pathname === '/saved-projects' ? 'nav-pill-active' : 'text-zinc-300 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              Saved
+            </Link>
+          )}
         </nav>
 
         <div className="flex items-center gap-4">
@@ -159,6 +175,9 @@ const Navbar = () => {
 
                 {user && (
                   <div className="mt-3 space-y-2 border-t border-white/15 pt-3">
+                    <Link to="/saved-projects" onClick={closeMenu} className="block rounded-lg border border-white/10 px-3 py-2 text-sm uppercase tracking-[0.12em] text-zinc-300 transition-colors hover:border-white/30 hover:text-white">
+                      Saved Projects
+                    </Link>
                     <Link to="/admin" onClick={closeMenu} className="block rounded-lg border border-white/10 px-3 py-2 text-sm uppercase tracking-[0.12em] text-zinc-300 transition-colors hover:border-white/30 hover:text-white">
                       {t('nav.dashboard')}
                     </Link>

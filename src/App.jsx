@@ -14,6 +14,9 @@ import StatusPage from './pages/StatusPage';
 import AdminDashboard from './admin/AdminDashboard';
 import ProtectedRoute from './admin/ProtectedRoute';
 import Login from './admin/Login';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+import SavedProjects from './pages/SavedProjects';
 import TestDither from './pages/TestDither';
 import { LanguageProvider, useLanguage } from './i18n';
 import { ThemeProvider, useTheme } from './theme';
@@ -91,6 +94,10 @@ function AppContent() {
             <Route path="/405" element={<ErrorPage code="405" />} />
             <Route path="/500" element={<ErrorPage code="500" />} />
             <Route path="/admin/login" element={<AnimatedPage><Login /></AnimatedPage>} />
+            <Route path="/admin/forgot-password" element={<AnimatedPage><ForgotPassword /></AnimatedPage>} />
+            <Route path="/admin/reset-password" element={<AnimatedPage><ResetPassword /></AnimatedPage>} />
+            <Route path="/saved-projects" element={<AnimatedPage><SavedProjects /></AnimatedPage>} />
+
             <Route path="/test" element={<AnimatedPage><TestDither /></AnimatedPage>} />
             <Route
               path="/admin"

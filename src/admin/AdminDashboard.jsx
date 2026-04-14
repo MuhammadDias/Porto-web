@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { FiEdit, FiLogOut, FiSave, FiTrash2, FiX } from 'react-icons/fi';
+import { FiEdit, FiLogOut, FiSave, FiTrash2, FiX, FiUser, FiImage } from 'react-icons/fi';
 import { supabase } from '../supabase/client';
+import { uploadImage, getProfile, updateProfile } from '../supabase/api';
 import toast from 'react-hot-toast';
 
 const defaultProjectForm = {
@@ -8,9 +9,17 @@ const defaultProjectForm = {
   category: 'web-design',
   description: '',
   image_url: '',
+  image_file: null, // New field for file upload
   project_url: '',
   code: '',
   tags: '',
+};
+
+const defaultProfileForm = {
+  name: '',
+  bio: '',
+  avatar_url: '',
+  avatar_file: null,
 };
 
 const defaultExperienceForm = {
@@ -55,6 +64,7 @@ const AdminDashboard = () => {
   const [projectForm, setProjectForm] = useState(defaultProjectForm);
   const [experienceForm, setExperienceForm] = useState(defaultExperienceForm);
   const [skillForm, setSkillForm] = useState(defaultSkillForm);
+  const [profileForm, setProfileForm] = useState(defaultProfileForm);
 
   useEffect(() => {
     fetchData();
@@ -71,6 +81,12 @@ const AdminDashboard = () => {
         const { data, error } = await supabase.from('experiences').select('*').order('start_date', { ascending: false });
         if (error) throw error;
         setExperiences(data || []);
+      } else if (activeTab === 'profile') {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const profile = await getProfile(user.id);
+          if (profile) setProfileForm({ ...profile, avatar_file: null });
+        }
       } else {
         const { data, error } = await supabase.from('skills').select('*').order('order', { ascending: true });
         if (error) throw error;
@@ -87,9 +103,20 @@ const AdminDashboard = () => {
     event.preventDefault();
     setLoading(true);
     try {
+      let finalImageUrl = projectForm.image_url;
+
+      // Handle file upload if a new file is selected
+      if (projectForm.image_file) {
+        toast.loading('Uploading project image...', { id: 'upload' });
+        finalImageUrl = await uploadImage(projectForm.image_file, 'projects');
+        toast.success('Image uploaded', { id: 'upload' });
+      }
+
       const projectData = {
-        ...projectForm,
-        image_url: projectForm.image_url || null,
+        title: projectForm.title,
+        category: projectForm.category,
+        description: projectForm.description,
+        image_url: finalImageUrl || null,
         project_url: projectForm.project_url || null,
         code: projectForm.code || null,
         tags: JSON.stringify(projectForm.tags.split(',').map((tag) => tag.trim()).filter(Boolean)),
@@ -110,7 +137,37 @@ const AdminDashboard = () => {
       setEditingItem(null);
       fetchData();
     } catch (error) {
-      toast.error(error.message || 'Failed to save project');
+      toast.error(error.message || 'Failed to save project', { id: 'upload' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleProfileSubmit = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      let finalAvatarUrl = profileForm.avatar_url;
+
+      if (profileForm.avatar_file) {
+        toast.loading('Uploading avatar...', { id: 'upload' });
+        finalAvatarUrl = await uploadImage(profileForm.avatar_file, 'avatars');
+        toast.success('Avatar uploaded', { id: 'upload' });
+      }
+
+      await updateProfile(user.id, {
+        name: profileForm.name,
+        bio: profileForm.bio,
+        avatar_url: finalAvatarUrl,
+      });
+
+      toast.success('Profile updated');
+      fetchData();
+    } catch (error) {
+      toast.error(error.message || 'Failed to update profile', { id: 'upload' });
     } finally {
       setLoading(false);
     }
@@ -209,15 +266,16 @@ const AdminDashboard = () => {
         </div>
 
         <div className="mb-6 flex flex-wrap gap-2">
-          {['projects', 'experiences', 'skills'].map((tab) => (
+          {['projects', 'experiences', 'skills', 'profile'].map((tab) => (
             <button
               key={tab}
               onClick={() => {
                 setActiveTab(tab);
                 setEditingItem(null);
               }}
-              className={`rounded-lg px-4 py-2 text-sm font-medium ${activeTab === tab ? 'bg-white text-slate-950' : 'border border-slate-700 text-slate-300 hover:bg-slate-900'}`}
+              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium ${activeTab === tab ? 'bg-white text-slate-950' : 'border border-slate-700 text-slate-300 hover:bg-slate-900'}`}
             >
+              {tab === 'profile' && <FiUser className="h-4 w-4" />}
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
           ))}
@@ -237,7 +295,26 @@ const AdminDashboard = () => {
                   <option value="videography">Videography</option>
                 </select>
                 <textarea required rows="3" value={projectForm.description} onChange={(event) => setProjectForm({ ...projectForm, description: event.target.value })} placeholder="Description" className="input-base resize-none" />
-                <input type="url" value={projectForm.image_url || ''} onChange={(event) => setProjectForm({ ...projectForm, image_url: event.target.value })} placeholder="Image URL" className="input-base" />
+                
+                <div className="space-y-1">
+                  <span className="text-xs text-slate-400">Project Thumbnail</span>
+                  <div className="flex gap-2">
+                    <label className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-slate-700 bg-slate-900/50 p-3 text-sm text-slate-400 hover:border-slate-500 hover:bg-slate-900 transition-colors">
+                      <FiImage className="h-4 w-4" />
+                      {projectForm.image_file ? projectForm.image_file.name : 'Click to upload image'}
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={(e) => setProjectForm({ ...projectForm, image_file: e.target.files[0] })} 
+                      />
+                    </label>
+                  </div>
+                  {projectForm.image_url && !projectForm.image_file && (
+                    <p className="text-[10px] text-slate-500 mt-1 truncate">Current: {projectForm.image_url}</p>
+                  )}
+                </div>
+
                 <input type="url" value={projectForm.project_url || ''} onChange={(event) => setProjectForm({ ...projectForm, project_url: event.target.value })} placeholder="Project URL" className="input-base" />
                 <input type="url" value={projectForm.code || ''} onChange={(event) => setProjectForm({ ...projectForm, code: event.target.value })} placeholder="Repository URL" className="input-base" />
                 <input type="text" value={projectForm.tags} onChange={(event) => setProjectForm({ ...projectForm, tags: event.target.value })} placeholder="Tags (comma separated)" className="input-base" />
@@ -305,6 +382,41 @@ const AdminDashboard = () => {
                   )}
                   <button type="submit" disabled={loading} className="btn-primary flex-1 disabled:opacity-60">
                     <FiSave className="h-4 w-4" /> {editingItem ? 'Update' : 'Save'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {activeTab === 'profile' && (
+              <form onSubmit={handleProfileSubmit} className="space-y-3">
+                <input type="text" required value={profileForm.name} onChange={(event) => setProfileForm({ ...profileForm, name: event.target.value })} placeholder="Your Name" className="input-base" />
+                <textarea required rows="5" value={profileForm.bio} onChange={(event) => setProfileForm({ ...profileForm, bio: event.target.value })} placeholder="Your Bio / Headline" className="input-base resize-none" />
+                
+                <div className="space-y-1">
+                  <span className="text-xs text-slate-400">Profile Picture / Avatar</span>
+                  <div className="flex gap-2">
+                    <label className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-slate-700 bg-slate-900/50 p-3 text-sm text-slate-400 hover:border-slate-500 hover:bg-slate-900 transition-colors">
+                      <FiUser className="h-4 w-4" />
+                      {profileForm.avatar_file ? profileForm.avatar_file.name : 'Click to upload avatar'}
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={(e) => setProfileForm({ ...profileForm, avatar_file: e.target.files[0] })} 
+                      />
+                    </label>
+                  </div>
+                  {profileForm.avatar_url && !profileForm.avatar_file && (
+                    <div className="mt-2 flex items-center gap-3 rounded-lg bg-slate-900/40 p-2">
+                       <img src={profileForm.avatar_url} alt="Current" className="h-10 w-10 rounded-full object-cover border border-slate-700" />
+                       <p className="text-[10px] text-slate-500 truncate">Current Avatar</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-2">
+                  <button type="submit" disabled={loading} className="btn-primary w-full disabled:opacity-60">
+                    <FiSave className="h-4 w-4" /> Save Profile
                   </button>
                 </div>
               </form>

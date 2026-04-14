@@ -72,6 +72,8 @@ export default function Projects() {
       });
     }
     setSelectedProject(project);
+    // Track view
+    import('../supabase/api').then(api => api.incrementViews(project.id));
   };
 
   const handleCategoryFilter = (category) => {

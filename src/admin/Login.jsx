@@ -4,6 +4,9 @@ import { FiArrowRight, FiLock, FiMail } from 'react-icons/fi';
 import { supabase } from '../supabase/client';
 import toast from 'react-hot-toast';
 
+import { ensureProfileExists } from '../supabase/api';
+import { Link } from 'react-router-dom';
+
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,6 +24,8 @@ const Login = () => {
         return;
       }
       if (data?.user) {
+        // Ensure profile exists on login
+        await ensureProfileExists(data.user);
         toast.success('Login successful');
         navigate('/admin');
       }
@@ -58,6 +63,12 @@ const Login = () => {
             {loading ? 'Signing in...' : 'Sign In'}
             {!loading && <FiArrowRight className="h-4 w-4" />}
           </button>
+          
+          <div className="mt-4 text-center">
+            <Link to="/admin/forgot-password" size="sm" className="text-sm text-slate-400 hover:text-white transition-colors">
+              Forgot your password?
+            </Link>
+          </div>
         </form>
       </div>
     </div>
