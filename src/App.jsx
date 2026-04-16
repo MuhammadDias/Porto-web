@@ -19,11 +19,13 @@ import ResetPassword from './pages/ResetPassword';
 import SavedProjects from './pages/SavedProjects';
 import TestDither from './pages/TestDither';
 import { LanguageProvider, useLanguage } from './i18n';
-import { ThemeProvider, useTheme } from './theme';
+import { ThemeProvider as OriginalThemeProvider, useTheme } from './theme';
+import { ThemeProvider as AppThemeProvider, useAppTheme } from './context/ThemeContext';
 import './index.css';
 import { AnimatePresence } from 'framer-motion';
 import { AnimatedPage } from './components/AnimatedPage';
 import ErrorPage from './components/ErrorPage';
+import SpotifyPortfolio from './components/layouts/SpotifyPortfolio';
 
 function AppContent() {
   const location = useLocation();
@@ -32,6 +34,7 @@ function AppContent() {
   const { theme } = useTheme();
   const [booting, setBooting] = useState(true);
   const [loaderSpeedMs, setLoaderSpeedMs] = useState(1100);
+  const { activeTheme, loading: themeLoading } = useAppTheme();
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -70,12 +73,18 @@ function AppContent() {
     return () => window.clearTimeout(timer);
   }, []);
 
-  if (booting) {
+  if (booting || themeLoading) {
     return (
       <div className="min-h-screen px-4">
         <DStatusLoader fullScreen label={t('common.loadingContent')} speedMs={loaderSpeedMs} />
       </div>
     );
+  }
+
+  const isAuthRoute = location.pathname.startsWith('/login') || location.pathname.startsWith('/register') || location.pathname.startsWith('/admin/login');
+
+  if (activeTheme === 'spotify_ui' && !isAdminPage && !isAuthRoute) {
+    return <SpotifyPortfolio />;
   }
 
   return (
@@ -128,13 +137,15 @@ function AppContent() {
 
 function App() {
   return (
-    <ThemeProvider>
-      <LanguageProvider>
-        <Router>
-          <AppContent />
-        </Router>
-      </LanguageProvider>
-    </ThemeProvider>
+    <AppThemeProvider>
+      <OriginalThemeProvider>
+        <LanguageProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </LanguageProvider>
+      </OriginalThemeProvider>
+    </AppThemeProvider>
   );
 }
 

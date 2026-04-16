@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { FiEdit, FiLogOut, FiSave, FiTrash2, FiX, FiUser, FiImage } from 'react-icons/fi';
 import { supabase } from '../supabase/client';
-import { uploadImage, getProfile, updateProfile } from '../supabase/api';
+import { uploadImage, getProfile, updateProfile, updateTheme } from '../supabase/api';
+import { useAppTheme } from '../context/ThemeContext';
 import toast from 'react-hot-toast';
 
 const defaultProjectForm = {
@@ -55,6 +56,7 @@ const parseTagsToText = (tags) => {
 };
 
 const AdminDashboard = () => {
+  const { activeTheme, setActiveTheme } = useAppTheme();
   const [activeTab, setActiveTab] = useState('projects');
   const [projects, setProjects] = useState([]);
   const [experiences, setExperiences] = useState([]);
@@ -66,9 +68,16 @@ const AdminDashboard = () => {
   const [skillForm, setSkillForm] = useState(defaultSkillForm);
   const [profileForm, setProfileForm] = useState(defaultProfileForm);
 
+  const [dbTheme, setDbTheme] = useState(activeTheme || 'default');
+  const [previewTheme, setPreviewTheme] = useState(activeTheme || 'default');
+
   useEffect(() => {
     fetchData();
   }, [activeTab]);
+
+  // useEffect(() => {
+  //   setActiveTheme(previewTheme);
+  // }, [previewTheme, setActiveTheme]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -82,10 +91,18 @@ const AdminDashboard = () => {
         if (error) throw error;
         setExperiences(data || []);
       } else if (activeTab === 'profile') {
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (user) {
           const profile = await getProfile(user.id);
           if (profile) setProfileForm({ ...profile, avatar_file: null });
+        }
+      } else if (activeTab === 'settings') {
+        const { data, error } = await supabase.from('settings').select('active_theme').limit(1).maybeSingle();
+        if (!error && data) {
+          setDbTheme(data.active_theme);
+          setPreviewTheme(data.active_theme);
         }
       } else {
         const { data, error } = await supabase.from('skills').select('*').order('order', { ascending: true });
@@ -119,7 +136,12 @@ const AdminDashboard = () => {
         image_url: finalImageUrl || null,
         project_url: projectForm.project_url || null,
         code: projectForm.code || null,
-        tags: JSON.stringify(projectForm.tags.split(',').map((tag) => tag.trim()).filter(Boolean)),
+        tags: JSON.stringify(
+          projectForm.tags
+            .split(',')
+            .map((tag) => tag.trim())
+            .filter(Boolean),
+        ),
         created_at: editingItem ? undefined : new Date().toISOString(),
       };
 
@@ -147,7 +169,9 @@ const AdminDashboard = () => {
     event.preventDefault();
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
       let finalAvatarUrl = profileForm.avatar_url;
@@ -266,7 +290,7 @@ const AdminDashboard = () => {
         </div>
 
         <div className="mb-6 flex flex-wrap gap-2">
-          {['projects', 'experiences', 'skills', 'profile'].map((tab) => (
+          {['projects', 'experiences', 'skills', 'profile', 'settings'].map((tab) => (
             <button
               key={tab}
               onClick={() => {
@@ -295,24 +319,17 @@ const AdminDashboard = () => {
                   <option value="videography">Videography</option>
                 </select>
                 <textarea required rows="3" value={projectForm.description} onChange={(event) => setProjectForm({ ...projectForm, description: event.target.value })} placeholder="Description" className="input-base resize-none" />
-                
+
                 <div className="space-y-1">
                   <span className="text-xs text-slate-400">Project Thumbnail</span>
                   <div className="flex gap-2">
                     <label className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-slate-700 bg-slate-900/50 p-3 text-sm text-slate-400 hover:border-slate-500 hover:bg-slate-900 transition-colors">
                       <FiImage className="h-4 w-4" />
                       {projectForm.image_file ? projectForm.image_file.name : 'Click to upload image'}
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        className="hidden" 
-                        onChange={(e) => setProjectForm({ ...projectForm, image_file: e.target.files[0] })} 
-                      />
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => setProjectForm({ ...projectForm, image_file: e.target.files[0] })} />
                     </label>
                   </div>
-                  {projectForm.image_url && !projectForm.image_file && (
-                    <p className="text-[10px] text-slate-500 mt-1 truncate">Current: {projectForm.image_url}</p>
-                  )}
+                  {projectForm.image_url && !projectForm.image_file && <p className="text-[10px] text-slate-500 mt-1 truncate">Current: {projectForm.image_url}</p>}
                 </div>
 
                 <input type="url" value={projectForm.project_url || ''} onChange={(event) => setProjectForm({ ...projectForm, project_url: event.target.value })} placeholder="Project URL" className="input-base" />
@@ -338,12 +355,8 @@ const AdminDashboard = () => {
                 <input type="date" required value={experienceForm.start_date} onChange={(event) => setExperienceForm({ ...experienceForm, start_date: event.target.value })} className="input-base" />
                 <input type="date" value={experienceForm.end_date} onChange={(event) => setExperienceForm({ ...experienceForm, end_date: event.target.value })} disabled={experienceForm.current} className="input-base disabled:opacity-60" />
                 <label className="flex items-center gap-2 text-sm text-slate-300">
-                  <input
-                    type="checkbox"
-                    checked={experienceForm.current}
-                    onChange={(event) => setExperienceForm({ ...experienceForm, current: event.target.checked, end_date: event.target.checked ? '' : experienceForm.end_date })}
-                  />
-                  I currently work here
+                  <input type="checkbox" checked={experienceForm.current} onChange={(event) => setExperienceForm({ ...experienceForm, current: event.target.checked, end_date: event.target.checked ? '' : experienceForm.end_date })} />I
+                  currently work here
                 </label>
                 <textarea required rows="3" value={experienceForm.description} onChange={(event) => setExperienceForm({ ...experienceForm, description: event.target.value })} placeholder="Description" className="input-base resize-none" />
                 <div className="flex gap-2 pt-2">
@@ -391,25 +404,20 @@ const AdminDashboard = () => {
               <form onSubmit={handleProfileSubmit} className="space-y-3">
                 <input type="text" required value={profileForm.name} onChange={(event) => setProfileForm({ ...profileForm, name: event.target.value })} placeholder="Your Name" className="input-base" />
                 <textarea required rows="5" value={profileForm.bio} onChange={(event) => setProfileForm({ ...profileForm, bio: event.target.value })} placeholder="Your Bio / Headline" className="input-base resize-none" />
-                
+
                 <div className="space-y-1">
                   <span className="text-xs text-slate-400">Profile Picture / Avatar</span>
                   <div className="flex gap-2">
                     <label className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-slate-700 bg-slate-900/50 p-3 text-sm text-slate-400 hover:border-slate-500 hover:bg-slate-900 transition-colors">
                       <FiUser className="h-4 w-4" />
                       {profileForm.avatar_file ? profileForm.avatar_file.name : 'Click to upload avatar'}
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        className="hidden" 
-                        onChange={(e) => setProfileForm({ ...profileForm, avatar_file: e.target.files[0] })} 
-                      />
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => setProfileForm({ ...profileForm, avatar_file: e.target.files[0] })} />
                     </label>
                   </div>
                   {profileForm.avatar_url && !profileForm.avatar_file && (
                     <div className="mt-2 flex items-center gap-3 rounded-lg bg-slate-900/40 p-2">
-                       <img src={profileForm.avatar_url} alt="Current" className="h-10 w-10 rounded-full object-cover border border-slate-700" />
-                       <p className="text-[10px] text-slate-500 truncate">Current Avatar</p>
+                      <img src={profileForm.avatar_url} alt="Current" className="h-10 w-10 rounded-full object-cover border border-slate-700" />
+                      <p className="text-[10px] text-slate-500 truncate">Current Avatar</p>
                     </div>
                   )}
                 </div>
@@ -417,6 +425,80 @@ const AdminDashboard = () => {
                 <div className="pt-2">
                   <button type="submit" disabled={loading} className="btn-primary w-full disabled:opacity-60">
                     <FiSave className="h-4 w-4" /> Save Profile
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {activeTab === 'settings' && (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setLoading(true);
+                  try {
+                    await updateTheme(previewTheme);
+
+                    // Force refetch after save to guarantee local sync with DB truth
+                    const { getActiveTheme } = await import('../supabase/api');
+                    const newTheme = await getActiveTheme();
+                    setActiveTheme(newTheme);
+                    setDbTheme(newTheme);
+
+                    toast.success('Theme updated!');
+                  } catch (error) {
+                    toast.error('Failed to update theme');
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                className="space-y-4"
+              >
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-300">Active UI Theme</label>
+                  <div className="flex gap-4 items-center">
+                    <label className="flex items-center gap-2 cursor-pointer text-slate-300">
+                      <input
+                        type="radio"
+                        name="theme"
+                        value="default"
+                        checked={previewTheme === 'default'}
+                        onChange={(e) => {
+                          const theme = e.target.value;
+                          setPreviewTheme(theme);
+                          setActiveTheme(theme);
+                        }}
+                      />
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer text-slate-300">
+                      <input
+                        type="radio"
+                        name="theme"
+                        value="spotify_ui"
+                        checked={previewTheme === 'spotify_ui'}
+                        onChange={(e) => {
+                          const theme = e.target.value;
+                          setPreviewTheme(theme);
+                          setActiveTheme(theme);
+                        }}
+                      />
+                    </label>
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-4">
+                  {previewTheme !== dbTheme && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPreviewTheme(dbTheme);
+                        setActiveTheme(dbTheme);
+                      }}
+                      className="btn-outline flex-1"
+                    >
+                      <FiX className="h-4 w-4" /> Cancel
+                    </button>
+                  )}
+                  <button type="submit" disabled={loading || previewTheme === dbTheme} className="btn-primary w-full disabled:opacity-60">
+                    <FiSave className="h-4 w-4" /> Save Settings
                   </button>
                 </div>
               </form>
@@ -563,4 +645,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-
