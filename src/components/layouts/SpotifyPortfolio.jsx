@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { COLORS } from "../shared/SpotifyConstants";
 import { SearchIcon, BellIcon, ChevronDownIcon, PlayIcon } from "../shared/SpotifyIcons";
 import Sidebar, { NAV_ITEMS } from "./Sidebar";
@@ -22,6 +23,8 @@ export default function SpotifyPortfolio() {
   const [filter, setFilter] = useState("All");
   const [activeSkillTab, setActiveSkillTab] = useState("All");
   const [activeSavedTab, setActiveSavedTab] = useState("All");
+  const [selectedProject, setSelectedProject] = useState(null);
+  const modalContentRef = useRef(null);
 
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -101,11 +104,24 @@ export default function SpotifyPortfolio() {
     }
     const element = document.getElementById(id);
     if (element && scrollRef.current) {
-        // Adjust for sticky header
         const top = element.offsetTop - 80;
         scrollRef.current.scrollTo({ top, behavior: 'smooth' });
     }
   };
+
+  const handleOpenProjectDetail = (project) => {
+    setSelectedProject(project);
+    // Track view
+    import('../../supabase/viewApi').then(api => {
+      if (api.incrementViews) api.incrementViews(project.id).catch(() => {});
+    });
+  };
+
+  useEffect(() => {
+    if (selectedProject && modalContentRef.current) {
+      modalContentRef.current.scrollTop = 0;
+    }
+  }, [selectedProject]);
 
   const filtered = projects.filter((p) => {
     const title = p.title || '';
@@ -158,16 +174,18 @@ export default function SpotifyPortfolio() {
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body, #root {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow-x: hidden;
+            max-width: 100vw;
+        }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #555; }
-        html, body {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-        }
       `}</style>
 
       <div
@@ -177,10 +195,12 @@ export default function SpotifyPortfolio() {
           background: COLORS.bg,
           color: COLORS.white,
           height: "100vh",
-          minHeight: "600px",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
+          width: "100%",
+          maxWidth: "100vw",
+          position: "relative"
         }}
       >
         <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
@@ -244,8 +264,8 @@ export default function SpotifyPortfolio() {
                 borderBottom: `1px solid ${COLORS.border}`,
                 display: "flex",
                 alignItems: "center",
-                padding: "0 24px",
-                gap: "16px",
+                padding: mobileView ? "0 12px" : "0 24px",
+                gap: mobileView ? "8px" : "16px",
                 flexShrink: 0,
                 position: "sticky",
                 top: 0,
@@ -257,8 +277,8 @@ export default function SpotifyPortfolio() {
                 <button
                   onClick={() => setSidebarOpen(true)}
                   style={{
-                    width: '40px',
-                    height: '40px',
+                    width: '36px',
+                    height: '36px',
                     borderRadius: '8px',
                     background: '#1a1a1a',
                     border: 'none',
@@ -266,7 +286,7 @@ export default function SpotifyPortfolio() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '20px',
+                    fontSize: '18px',
                     cursor: 'pointer',
                     flexShrink: 0,
                   }}
@@ -279,6 +299,7 @@ export default function SpotifyPortfolio() {
               <div
                 style={{
                   flex: 1,
+                  minWidth: 0,
                   maxWidth: "480px",
                   position: "relative",
                 }}
@@ -406,6 +427,10 @@ export default function SpotifyPortfolio() {
               style={{
                 flex: 1,
                 overflowY: "auto",
+                overflowX: "hidden",
+                width: "100%",
+                maxWidth: "100%",
+                boxSizing: "border-box",
                 padding: mobileView ? "20px 16px 80px" : "32px",
               }}
             >
@@ -512,26 +537,37 @@ export default function SpotifyPortfolio() {
                   />
 
                   {/* Project grid */}
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: mobileView ? "repeat(2, 1fr)" : "repeat(auto-fill, minmax(220px, 1fr))",
-                      gap: "16px",
-                    }}
-                  >
-                    {filtered.length > 0 ? (
-                      filtered.map((project, i) => (
-                        <ProjectCard key={project.id} project={project} index={i} currentUser={currentUser} />
-                      ))
-                    ) : (
-                      <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "60px 20px", color: COLORS.muted }}>
-                        <div style={{ fontSize: "40px", marginBottom: "12px" }}>🔍</div>
-                        <div style={{ fontWeight: 700, fontSize: "16px", color: COLORS.white, marginBottom: "6px" }}>
-                          No projects found
+                  <div style={{ marginTop: "16px", width: "100%", boxSizing: "border-box" }}>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: mobileView ? "1fr" : "repeat(4, 1fr)",
+                        gap: "16px",
+                        width: "100%",
+                        boxSizing: "border-box"
+                      }}
+                    >
+                      {filtered.length > 0 ? (
+                        filtered.map((project, i) => (
+                          <ProjectCard 
+                            key={project.id} 
+                            project={project} 
+                            index={i} 
+                            currentUser={currentUser} 
+                            mobileView={mobileView}
+                            onSelect={handleOpenProjectDetail}
+                          />
+                        ))
+                      ) : (
+                        <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "60px 20px", color: COLORS.muted }}>
+                          <div style={{ fontSize: "40px", marginBottom: "12px" }}>🔍</div>
+                          <div style={{ fontWeight: 700, fontSize: "16px", color: COLORS.white, marginBottom: "6px" }}>
+                            No projects found
+                          </div>
+                          <div style={{ fontSize: "13px" }}>Try a different search or category</div>
                         </div>
-                        <div style={{ fontSize: "13px" }}>Try a different search or category</div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
               </div>
 
@@ -545,22 +581,33 @@ export default function SpotifyPortfolio() {
                   <div style={{ marginBottom: "20px" }}>
                     <Tabs tabs={SAVED_TABS} activeTab={activeSavedTab} setActiveTab={setActiveSavedTab} />
                   </div>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: mobileView ? "repeat(2, 1fr)" : "repeat(auto-fill, minmax(220px, 1fr))",
-                      gap: "16px",
-                    }}
-                  >
-                    {filteredSaved.length > 0 ? (
-                      filteredSaved.map((project, i) => (
-                        <ProjectCard key={`saved-${project.id}`} project={project} index={i} currentUser={currentUser} />
-                      ))
-                    ) : (
-                      <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "40px 20px", background: COLORS.bgCard, borderRadius: '12px', border: `1px solid ${COLORS.border}` }}>
-                        <p style={{ color: COLORS.muted, fontSize: '14px' }}>No saved projects yet. Click the heart icon to save!</p>
-                      </div>
-                    )}
+                  <div style={{ marginTop: "16px", width: "100%", boxSizing: "border-box" }}>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: mobileView ? "1fr" : "repeat(4, 1fr)",
+                        gap: "16px",
+                        width: "100%",
+                        boxSizing: "border-box"
+                      }}
+                    >
+                      {filteredSaved.length > 0 ? (
+                        filteredSaved.map((project, i) => (
+                          <ProjectCard 
+                            key={`saved-${project.id}`} 
+                            project={project} 
+                            index={i} 
+                            currentUser={currentUser} 
+                            mobileView={mobileView}
+                            onSelect={handleOpenProjectDetail}
+                          />
+                        ))
+                      ) : (
+                        <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "40px 20px", background: COLORS.bgCard, borderRadius: '12px', border: `1px solid ${COLORS.border}` }}>
+                          <p style={{ color: COLORS.muted, fontSize: '14px' }}>No saved projects yet. Click the heart icon to save!</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
               </div>
 
@@ -649,6 +696,103 @@ export default function SpotifyPortfolio() {
           </div>
         )}
       </div>
+
+      {/* Project Detail Modal */}
+      {selectedProject && createPortal(
+        <div
+          onClick={() => setSelectedProject(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: 'rgba(0,0,0,0.85)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+            animation: 'overlayIn 0.25s ease',
+          }}
+        >
+          <style>{`
+            @keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+          `}</style>
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              position: 'relative',
+              background: '#181818',
+              borderRadius: '20px 20px 0 0',
+              width: '100%',
+              maxWidth: '720px',
+              maxHeight: '92vh',
+              display: 'flex',
+              flexDirection: 'column',
+              animation: 'sheetUp 0.35s cubic-bezier(0.4,0,0.2,1)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderBottom: 'none',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px' }}>
+              <div style={{ width: '40px', height: '4px', borderRadius: '2px', background: 'rgba(255,255,255,0.2)' }} />
+            </div>
+            <button
+              onClick={() => setSelectedProject(null)}
+              style={{
+                position: 'absolute', top: '16px', right: '16px',
+                width: '32px', height: '32px', borderRadius: '50%',
+                background: 'rgba(255,255,255,0.1)', border: 'none',
+                color: 'white', fontSize: '20px', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >\xD7</button>
+            <div ref={modalContentRef} style={{ overflowY: 'auto', flex: 1, padding: '8px 24px 48px' }}>
+              {selectedProject.image_url && (
+                <div style={{ width: '100%', height: '220px', borderRadius: '12px', overflow: 'hidden', marginBottom: '20px', background: selectedProject.color || '#1a3a2a' }}>
+                  <img src={selectedProject.image_url} alt={selectedProject.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+              )}
+              <div style={{ marginBottom: '10px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: COLORS.accent, background: 'rgba(29,185,84,0.12)', padding: '4px 12px', borderRadius: '20px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  {selectedProject.category || 'Project'}
+                </span>
+              </div>
+              <h2 style={{ fontFamily: "'Sora', sans-serif", fontWeight: 800, fontSize: '24px', color: COLORS.white, letterSpacing: '-0.02em', marginBottom: '12px', lineHeight: 1.2 }}>
+                {selectedProject.title}
+              </h2>
+              <p style={{ fontSize: '14px', color: COLORS.muted, lineHeight: 1.7, marginBottom: '24px', whiteSpace: 'pre-line' }}>
+                {selectedProject.description || selectedProject.subtitle || 'No description available.'}
+              </p>
+              {selectedProject.tags && (() => {
+                let tags = [];
+                try { tags = Array.isArray(selectedProject.tags) ? selectedProject.tags : JSON.parse(selectedProject.tags); } catch (e) { tags = String(selectedProject.tags).split(',').map(t => t.trim()).filter(Boolean); }
+                return tags.length > 0 ? (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '24px' }}>
+                    {tags.map((tag, i) => (
+                      <span key={i} style={{ fontSize: '12px', color: '#aaa', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', padding: '4px 10px', borderRadius: '20px' }}>{tag}</span>
+                    ))}
+                  </div>
+                ) : null;
+              })()}
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                {(selectedProject.live_url || selectedProject.project_url) && (
+                  <a href={selectedProject.live_url || selectedProject.project_url} target="_blank" rel="noopener noreferrer"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', height: '44px', padding: '0 24px', background: COLORS.accent, borderRadius: '24px', color: '#000', fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: '14px', textDecoration: 'none' }}>
+                    🔗 Live Preview
+                  </a>
+                )}
+                {(selectedProject.github_url || selectedProject.code) && (
+                  <a href={selectedProject.github_url || selectedProject.code} target="_blank" rel="noopener noreferrer"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', height: '44px', padding: '0 24px', background: 'transparent', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '24px', color: COLORS.white, fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>
+                    GitHub
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </>
   );
 }

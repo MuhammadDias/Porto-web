@@ -5,7 +5,7 @@ import { toggleLike, checkIfLiked } from '../../supabase/likeApi';
 import { incrementViews } from '../../supabase/viewApi';
 import { supabase } from '../../supabase/client';
 
-export default function ProjectCard({ project, index, currentUser }) {
+export default function ProjectCard({ project, index, currentUser, mobileView, onSelect }) {
   const [hovered, setHovered] = useState(false);
   const [liked, setLiked] = useState(project.liked || false);
   const [loadingLike, setLoadingLike] = useState(false);
@@ -33,6 +33,7 @@ export default function ProjectCard({ project, index, currentUser }) {
 
   const handleView = () => {
     incrementViews(project.id).catch(() => {});
+    if (onSelect) onSelect(project);
   };
 
   const projectColor = project.color || '#1a3a2a';
@@ -46,12 +47,16 @@ export default function ProjectCard({ project, index, currentUser }) {
       style={{
         background: COLORS.bgCard,
         borderRadius: '12px',
-        padding: '16px',
+        padding: mobileView ? "14px" : "16px",
         cursor: 'pointer',
         transition: 'all 0.25s cubic-bezier(0.4,0,0.2,1)',
         transform: hovered ? 'translateY(-4px) scale(1.02)' : 'translateY(0) scale(1)',
         boxShadow: hovered ? '0 16px 40px rgba(0,0,0,0.6)' : 'none',
         position: 'relative',
+        width: "100%",
+        minWidth: 0,
+        height: "auto",
+        boxSizing: "border-box",
         animationDelay: `${index * 60}ms`,
         animation: 'fadeSlideIn 0.4s ease both',
       }}
@@ -67,11 +72,10 @@ export default function ProjectCard({ project, index, currentUser }) {
       <div
         style={{
           width: '100%',
-          aspectRatio: '1 / 1',
-          maxHeight: '300px',
+          height: mobileView ? "140px" : "180px",
           borderRadius: '8px',
           background: projectColor,
-          marginBottom: '16px',
+          marginBottom: '12px',
           position: 'relative',
           overflow: 'hidden',
         }}
@@ -80,10 +84,14 @@ export default function ProjectCard({ project, index, currentUser }) {
           <img
             src={project.image_url}
             alt={project.title}
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+            style={{ 
+                width: '100%', 
+                height: '100%', 
+                objectFit: 'cover' 
+            }}
           />
         ) : (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '52px' }}>
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '52px' }}>
             {projectEmoji}
           </div>
         )}
@@ -151,12 +159,21 @@ export default function ProjectCard({ project, index, currentUser }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
-            fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: '15px', color: COLORS.white,
+            fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: mobileView ? "14px" : "16px", color: COLORS.white,
             marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>
             {project.title}
           </div>
-          <div style={{ fontSize: '12px', color: COLORS.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div style={{ 
+            fontSize: '12px', 
+            color: COLORS.muted, 
+            maxHeight: "40px",
+            overflow: "hidden",
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            lineHeight: "1.4"
+          }}>
             {project.description || project.subtitle || ''}
           </div>
         </div>
