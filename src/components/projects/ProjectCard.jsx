@@ -67,7 +67,8 @@ export default function ProjectCard({ project, index, currentUser }) {
       <div
         style={{
           width: '100%',
-          paddingBottom: '100%',
+          aspectRatio: '1 / 1',
+          maxHeight: '300px',
           borderRadius: '8px',
           background: projectColor,
           marginBottom: '16px',
