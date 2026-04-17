@@ -24,8 +24,9 @@ export default function SpotifyPortfolio() {
   const [activeSavedTab, setActiveSavedTab] = useState("All");
 
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileView, setMobileView] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(typeof window !== 'undefined' ? window.innerWidth < 1024 && window.innerWidth >= 768 : false);
+  const [mobileView, setMobileView] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
   const containerRef = useRef(null);
   const scrollRef = useRef(null);
 
@@ -80,10 +81,15 @@ export default function SpotifyPortfolio() {
   useEffect(() => {
     const observer = new ResizeObserver(([entry]) => {
       const w = entry.contentRect.width;
-      setMobileView(w < 600);
-      setSidebarCollapsed(w < 860 && w >= 600);
+      setMobileView(w < 768);
+      setSidebarCollapsed(w < 1024 && w >= 768);
     });
-    if (containerRef.current) observer.observe(containerRef.current);
+    if (containerRef.current) {
+      const w = containerRef.current.getBoundingClientRect().width;
+      setMobileView(w < 768);
+      setSidebarCollapsed(w < 1024 && w >= 768);
+      observer.observe(containerRef.current);
+    }
     return () => observer.disconnect();
   }, []);
 
@@ -178,16 +184,54 @@ export default function SpotifyPortfolio() {
         }}
       >
         <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-          {/* Sidebar — hidden on mobile */}
-          {!mobileView && (
+          {/* Sidebar Container */}
+          <div
+            style={{
+              position: mobileView ? 'fixed' : 'relative',
+              top: 0,
+              left: 0,
+              height: '100vh',
+              width: mobileView ? '260px' : 'auto',
+              background: '#000',
+              zIndex: 1000,
+              transform: mobileView
+                ? sidebarOpen
+                  ? 'translateX(0)'
+                  : 'translateX(-100%)'
+                : 'none',
+              transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            }}
+          >
             <Sidebar
               activeNav={activeNav}
-              onNavClick={handleNavClick}
+              onNavClick={(id) => {
+                handleNavClick(id);
+                if (mobileView) setSidebarOpen(false);
+              }}
               collapsed={sidebarCollapsed}
               profile={profile}
               recentProjects={projects} // simplistic passing of all projects
+              isMobile={mobileView}
+              onClose={() => setSidebarOpen(false)}
             />
-          )}
+          </div>
+
+          {/* Overlay Background for Mobile */}
+          <div
+            onClick={() => setSidebarOpen(false)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0,0,0,0.6)',
+              zIndex: 999,
+              opacity: (mobileView && sidebarOpen) ? 1 : 0,
+              pointerEvents: (mobileView && sidebarOpen) ? 'auto' : 'none',
+              transition: 'opacity 0.3s ease'
+            }}
+          />
 
           {/* Main area */}
           <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -208,6 +252,29 @@ export default function SpotifyPortfolio() {
                 zIndex: 10,
               }}
             >
+              {/* Hamburger Toggle (Mobile) */}
+              {mobileView && (
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '8px',
+                    background: '#1a1a1a',
+                    border: 'none',
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '20px',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                >
+                  ☰
+                </button>
+              )}
+
               {/* Search */}
               <div
                 style={{
@@ -515,17 +582,19 @@ export default function SpotifyPortfolio() {
 
               <AboutSection profile={profile} mobileView={mobileView} />
               
-              <div style={{ paddingTop: "64px", marginTop: "32px", marginBottom: "-32px" }}>
+              <div style={{ paddingTop: "64px", marginTop: "32px" }}>
                 <div style={{ display: "flex", alignItems: "center", marginBottom: "16px" }}>
                   <h2 style={{ fontFamily: "'Sora', sans-serif", fontWeight: 800, fontSize: "22px", color: COLORS.white, letterSpacing: "-0.02em" }}>
                     Top Skills
                   </h2>
                 </div>
-                <div style={{ marginBottom: "20px" }}>
+                <div style={{ marginBottom: "24px" }}>
                   <Tabs tabs={SKILL_TABS} activeTab={activeSkillTab} setActiveTab={setActiveSkillTab} />
                 </div>
               </div>
-              <SkillsSection skills={filteredSkills} mobileView={mobileView} />
+              <div style={{ marginTop: "12px" }}>
+                <SkillsSection skills={filteredSkills} mobileView={mobileView} />
+              </div>
 
               <ContactSection mobileView={mobileView} />
             </div>

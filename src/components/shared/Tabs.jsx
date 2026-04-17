@@ -1,6 +1,6 @@
 const Tabs = ({ tabs, activeTab, setActiveTab, className = "" }) => {
   return (
-    <div className={`flex gap-2 flex-wrap overflow-x-auto pb-1 ${className}`}>
+    <div className={`flex gap-2 overflow-x-auto pb-2 ${className}`}>
       {tabs.map((tab) => (
         <button
           key={tab}

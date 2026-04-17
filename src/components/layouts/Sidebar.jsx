@@ -13,7 +13,7 @@ const NAV_ITEMS = [
 
 export { NAV_ITEMS };
 
-export default function Sidebar({ activeNav, onNavClick, collapsed, profile, recentProjects }) {
+export default function Sidebar({ activeNav, onNavClick, collapsed, profile, recentProjects, isMobile, onClose }) {
   const initials = profile?.name
     ? profile.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
     : 'ME';
@@ -32,20 +32,34 @@ export default function Sidebar({ activeNav, onNavClick, collapsed, profile, rec
       }}
     >
       {/* Logo */}
-      <div style={{ padding: collapsed ? '24px 16px' : '24px 24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <div style={{
-          width: '36px', height: '36px', borderRadius: '50%', background: COLORS.accent,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '18px',
-        }}>
-          ⚡
-        </div>
-        {!collapsed && (
-          <span style={{
-            fontFamily: "'Sora', sans-serif", fontWeight: 800, fontSize: '18px',
-            color: COLORS.white, letterSpacing: '-0.02em', whiteSpace: 'nowrap',
+      <div style={{ padding: collapsed ? '24px 16px' : '24px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{
+            width: '36px', height: '36px', borderRadius: '50%', background: COLORS.accent,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '18px',
           }}>
-            devfolio
-          </span>
+            ⚡
+          </div>
+          {!collapsed && (
+            <span style={{
+              fontFamily: "'Sora', sans-serif", fontWeight: 800, fontSize: '18px',
+              color: COLORS.white, letterSpacing: '-0.02em', whiteSpace: 'nowrap',
+            }}>
+              devfolio
+            </span>
+          )}
+        </div>
+        {isMobile && (
+          <button 
+            onClick={onClose}
+            style={{
+              background: 'transparent', border: 'none', color: COLORS.muted,
+              cursor: 'pointer', fontSize: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: '4px'
+            }}
+          >
+            &times;
+          </button>
         )}
       </div>
 
