@@ -14,13 +14,14 @@ export default function AboutSection({ profile, mobileView }) {
   if (!profile) return null;
 
   return (
-    <div style={{ marginBottom: "48px", paddingTop: "64px" }} id="about">
+    <div style={{ marginBottom: "24px" }} id="about">
       <div
         style={{
           display: "flex",
           alignItems: "center",
           marginBottom: "24px",
           gap: "12px",
+          marginTop: 0,
         }}
       >
         <h2
@@ -30,6 +31,7 @@ export default function AboutSection({ profile, mobileView }) {
             fontSize: "22px",
             color: COLORS.white,
             letterSpacing: "-0.02em",
+            marginTop: 0,
           }}
         >
           About You
@@ -38,14 +40,10 @@ export default function AboutSection({ profile, mobileView }) {
 
       <div
         style={{
-          background: COLORS.bgCard,
-          borderRadius: "16px",
-          padding: mobileView ? "24px" : "40px",
           display: "flex",
           flexDirection: mobileView ? "column" : "row",
           gap: mobileView ? "24px" : "40px",
           alignItems: mobileView ? "center" : "flex-start",
-          border: `1px solid ${COLORS.border}`,
         }}
       >
         <div

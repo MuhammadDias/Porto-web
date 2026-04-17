@@ -4,6 +4,7 @@ import { HeartIcon, EyeIcon, ExternalLinkIcon, GithubIcon, PlayIcon } from '../s
 import { toggleLike, checkIfLiked } from '../../supabase/likeApi';
 import { incrementViews } from '../../supabase/viewApi';
 import { supabase } from '../../supabase/client';
+import { Rocket } from 'lucide-react';
 
 export default function ProjectCard({ project, index, currentUser, mobileView, onSelect }) {
   const [hovered, setHovered] = useState(false);
@@ -37,7 +38,6 @@ export default function ProjectCard({ project, index, currentUser, mobileView, o
   };
 
   const projectColor = project.color || '#1a3a2a';
-  const projectEmoji = project.emoji || '🚀';
 
   return (
     <div
@@ -91,8 +91,8 @@ export default function ProjectCard({ project, index, currentUser, mobileView, o
             }}
           />
         ) : (
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '52px' }}>
-            {projectEmoji}
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Rocket size={52} color="rgba(255,255,255,0.3)" />
           </div>
         )}
 

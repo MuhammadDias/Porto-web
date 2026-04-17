@@ -1,6 +1,8 @@
 import React from 'react';
 import { COLORS } from '../shared/SpotifyConstants';
 import { HomeIcon, GridIcon, BookmarkIcon, MailIcon, UserIcon, StarIcon } from '../shared/SpotifyIcons';
+import { Zap, Rocket } from 'lucide-react';
+import { ICON_SIZE } from '../shared/IconConfig';
 
 const NAV_ITEMS = [
   { id: 'home', label: 'Home', icon: HomeIcon },
@@ -36,9 +38,10 @@ export default function Sidebar({ activeNav, onNavClick, collapsed, profile, rec
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{
             width: '36px', height: '36px', borderRadius: '50%', background: COLORS.accent,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '18px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, 
+            color: COLORS.bg
           }}>
-            ⚡
+            <Zap size={ICON_SIZE} fill="currentColor" />
           </div>
           {!collapsed && (
             <span style={{
@@ -118,7 +121,7 @@ export default function Sidebar({ activeNav, onNavClick, collapsed, profile, rec
               }}>
                 {item.image_url
                   ? <img src={item.image_url} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : (item.emoji || '🚀')
+                  : <Rocket size={16} color={COLORS.muted} />
                 }
               </div>
               <div style={{ minWidth: 0 }}>

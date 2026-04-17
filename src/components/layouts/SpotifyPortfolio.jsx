@@ -7,6 +7,18 @@ import ProjectCard from "../projects/ProjectCard";
 import AboutSection from "../sections/AboutSection";
 import SkillsSection from "../sections/SkillsSection";
 import ContactSection from "../sections/ContactSection";
+import { 
+  Menu, 
+  User, 
+  Search, 
+  Folder, 
+  Eye, 
+  Heart, 
+  Rocket, 
+  Music, 
+  ExternalLink 
+} from "lucide-react";
+import { ICON_SIZE } from "../shared/IconConfig";
 
 import { supabase } from "../../supabase/client";
 import { getProjects } from "../../supabase/projectApi";
@@ -28,8 +40,8 @@ export default function SpotifyPortfolio() {
 
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(typeof window !== 'undefined' ? window.innerWidth < 1024 && window.innerWidth >= 768 : false);
-  const [mobileView, setMobileView] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(typeof window !== 'undefined' ? window.innerWidth < 1200 && window.innerWidth >= 992 : false);
+  const [mobileView, setMobileView] = useState(typeof window !== 'undefined' ? window.innerWidth < 992 : false);
   const containerRef = useRef(null);
   const scrollRef = useRef(null);
 
@@ -84,13 +96,13 @@ export default function SpotifyPortfolio() {
   useEffect(() => {
     const observer = new ResizeObserver(([entry]) => {
       const w = entry.contentRect.width;
-      setMobileView(w < 768);
-      setSidebarCollapsed(w < 1024 && w >= 768);
+      setMobileView(w < 992);
+      setSidebarCollapsed(w < 1200 && w >= 992);
     });
     if (containerRef.current) {
       const w = containerRef.current.getBoundingClientRect().width;
-      setMobileView(w < 768);
-      setSidebarCollapsed(w < 1024 && w >= 768);
+      setMobileView(w < 992);
+      setSidebarCollapsed(w < 1200 && w >= 992);
       observer.observe(containerRef.current);
     }
     return () => observer.disconnect();
@@ -236,6 +248,23 @@ export default function SpotifyPortfolio() {
             />
           </div>
 
+          {/* Mobile Overlay */}
+          {mobileView && sidebarOpen && (
+            <div
+              onClick={() => setSidebarOpen(false)}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(0,0,0,0.5)',
+                backdropFilter: 'blur(4px)',
+                zIndex: 999,
+                animation: 'fadeIn 0.2s ease',
+              }}
+            >
+              <style>{`@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }`}</style>
+            </div>
+          )}
+
           {/* Overlay Background for Mobile */}
           <div
             onClick={() => setSidebarOpen(false)}
@@ -286,12 +315,11 @@ export default function SpotifyPortfolio() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '18px',
                     cursor: 'pointer',
                     flexShrink: 0,
                   }}
                 >
-                  ☰
+                  <Menu size={24} />
                 </button>
               )}
 
@@ -431,7 +459,7 @@ export default function SpotifyPortfolio() {
                 width: "100%",
                 maxWidth: "100%",
                 boxSizing: "border-box",
-                padding: mobileView ? "20px 16px 80px" : "32px",
+                padding: mobileView ? "20px 12px 80px" : "32px",
               }}
             >
               <div id="home">
@@ -441,7 +469,7 @@ export default function SpotifyPortfolio() {
                       borderRadius: "16px",
                       background: `linear-gradient(135deg, #0d2b1a 0%, #121212 60%)`,
                       border: `1px solid rgba(29,185,84,0.15)`,
-                      padding: mobileView ? "28px 20px" : "40px",
+                      padding: mobileView ? "24px 16px" : "40px",
                       marginBottom: "32px",
                       position: "relative",
                       overflow: "hidden",
@@ -468,8 +496,8 @@ export default function SpotifyPortfolio() {
                         }}
                       >
                          {profile?.avatar_url ? (
-                            <img src={profile.avatar_url} alt="" style={{width: '100%', height: '100%', objectFit: 'cover'}} />
-                         ) : '👨‍💻'}
+                            <img src={profile.avatar_url} alt={profile.name} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                         ) : <User size={mobileView ? 40 : 64} />}
                       </div>
                       <div style={{ flex: 1, minWidth: "180px" }}>
                         <div style={{ fontSize: "11px", fontWeight: 700, color: COLORS.accent, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "6px" }}>
@@ -537,7 +565,7 @@ export default function SpotifyPortfolio() {
                   />
 
                   {/* Project grid */}
-                  <div style={{ marginTop: "16px", width: "100%", boxSizing: "border-box" }}>
+                  <div style={{ marginTop: "16px", width: "100%", boxSizing: "border-box", padding: mobileView ? "0 4px" : "0" }}>
                     <div
                       style={{
                         display: "grid",
@@ -559,12 +587,21 @@ export default function SpotifyPortfolio() {
                           />
                         ))
                       ) : (
-                        <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "60px 20px", color: COLORS.muted }}>
-                          <div style={{ fontSize: "40px", marginBottom: "12px" }}>🔍</div>
-                          <div style={{ fontWeight: 700, fontSize: "16px", color: COLORS.white, marginBottom: "6px" }}>
-                            No projects found
+                        <div
+                          style={{
+                            textAlign: "center",
+                            padding: "40px 20px",
+                            opacity: 0.5,
+                            gridColumn: "1 / -1"
+                          }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "center", marginBottom: "12px" }}>
+                            <Search size={40} />
                           </div>
-                          <div style={{ fontSize: "13px" }}>Try a different search or category</div>
+                          <div style={{ fontSize: "16px", fontWeight: 600 }}>No results found</div>
+                          <div style={{ fontSize: "13px", color: COLORS.muted, marginTop: "4px" }}>
+                            Check the spelling or try another filter
+                          </div>
                         </div>
                       )}
                     </div>
@@ -612,23 +649,73 @@ export default function SpotifyPortfolio() {
               </div>
 
               {/* Stats strip */}
-              <div style={{ marginTop: "40px", display: "grid", gridTemplateColumns: mobileView ? "repeat(2, 1fr)" : "repeat(4, 1fr)", gap: "12px" }}>
+              <div style={{ marginTop: "40px", display: "grid", gridTemplateColumns: mobileView ? "1fr" : "repeat(4, 1fr)", gap: "12px" }}>
                 {[
-                  { label: "Total Projects", value: projects.length.toString(), icon: "📁" },
-                  { label: "Total Views", value: totalViews >= 1000 ? `${(totalViews / 1000).toFixed(1)}k` : totalViews.toString(), icon: "👁️" },
-                  { label: "Liked Projects", value: projects.filter(p => p.liked).length.toString(), icon: "💚" },
-                  { label: "Years Active", value: "3+", icon: "🚀" },
+                  { label: "Total Projects", value: projects.length.toString(), icon: <Folder size={20} /> },
+                  { label: "Total Views", value: totalViews >= 1000 ? `${(totalViews / 1000).toFixed(1)}k` : totalViews.toString(), icon: <Eye size={20} /> },
+                  { label: "Liked Projects", value: projects.filter(p => p.liked).length.toString(), icon: <Heart size={20} /> },
+                  { label: "Years Active", value: "3+", icon: <Rocket size={20} /> },
                 ].map((stat) => (
-                  <div key={stat.label} style={{ background: COLORS.bgCard, borderRadius: "12px", padding: "20px", border: `1px solid ${COLORS.border}`, textAlign: "center" }}>
-                    <div style={{ fontSize: "24px", marginBottom: "8px" }}>{stat.icon}</div>
+                  <div key={stat.label} style={{ background: COLORS.bgCard, borderRadius: "12px", padding: "20px", border: `1px solid ${COLORS.border}`, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+                    <div style={{ color: COLORS.accent, marginBottom: "8px" }}>{stat.icon}</div>
                     <div style={{ fontFamily: "'Sora', sans-serif", fontWeight: 800, fontSize: "22px", color: COLORS.white, letterSpacing: "-0.02em" }}>{stat.value}</div>
                     <div style={{ fontSize: "12px", color: COLORS.muted, marginTop: "4px" }}>{stat.label}</div>
                   </div>
                 ))}
               </div>
 
-              <AboutSection profile={profile} mobileView={mobileView} />
-              
+              <div
+                style={{
+                  background: "#181818",
+                  borderRadius: "16px",
+                  padding: mobileView ? "16px" : "24px",
+                  border: "1px solid #222",
+                  marginTop: "32px",
+                  boxSizing: "border-box"
+                }}
+              >
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: mobileView ? "1fr" : "2fr 1fr",
+                    gap: "24px",
+                    alignItems: "start"
+                  }}
+                >
+                  {/* LEFT: ABOUT */}
+                  <div style={{ alignSelf: "start" }}>
+                    <AboutSection profile={profile} mobileView={mobileView} />
+                  </div>
+
+                  {/* RIGHT: PLAYLIST */}
+                  <div style={{ width: "100%", alignSelf: "start" }}>
+                    <h3 style={{
+                      fontFamily: "'Sora', sans-serif",
+                      fontSize: "16px",
+                      fontWeight: 700,
+                      color: COLORS.white,
+                      marginBottom: "12px",
+                      marginTop: 0, // Reset any potential browser default
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px"
+                    }}>
+                      <Music size={18} />
+                      <span>My Playlist</span>
+                    </h3>
+                    <iframe
+                      title="Spotify Playlist"
+                      src="https://open.spotify.com/embed/playlist/0ESQAXfvKpcF6cPzQup8PN"
+                      width="100%"
+                      height="352"
+                      style={{ borderRadius: "12px", border: "none", maxWidth: "100%", display: "block" }}
+                      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                      loading="lazy"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div style={{ paddingTop: "64px", marginTop: "32px" }}>
                 <div style={{ display: "flex", alignItems: "center", marginBottom: "16px" }}>
                   <h2 style={{ fontFamily: "'Sora', sans-serif", fontWeight: 800, fontSize: "22px", color: COLORS.white, letterSpacing: "-0.02em" }}>
@@ -776,10 +863,11 @@ export default function SpotifyPortfolio() {
               })()}
               <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                 {(selectedProject.live_url || selectedProject.project_url) && (
-                  <a href={selectedProject.live_url || selectedProject.project_url} target="_blank" rel="noopener noreferrer"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', height: '44px', padding: '0 24px', background: COLORS.accent, borderRadius: '24px', color: '#000', fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: '14px', textDecoration: 'none' }}>
-                    🔗 Live Preview
-                  </a>
+                    <a href={selectedProject.live_url || selectedProject.project_url} target="_blank" rel="noopener noreferrer"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', height: '44px', padding: '0 24px', background: COLORS.accent, borderRadius: '24px', color: '#000', fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: '14px', textDecoration: 'none' }}>
+                      <ExternalLink size={14} />
+                      <span>Live Preview</span>
+                    </a>
                 )}
                 {(selectedProject.github_url || selectedProject.code) && (
                   <a href={selectedProject.github_url || selectedProject.code} target="_blank" rel="noopener noreferrer"
