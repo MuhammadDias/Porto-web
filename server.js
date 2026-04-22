@@ -28,6 +28,7 @@ function safeFetch(url, options = {}) {
       const urlObj = new URL(url);
       const hostname = urlObj.hostname;
       const ip = await dnsResolve(hostname);
+      console.log(`🌐 DNS: ${hostname} -> ${ip}`);
 
       const bodyStr = options.body || '';
       const reqOptions = {
@@ -38,12 +39,14 @@ function safeFetch(url, options = {}) {
         headers: {
           ...options.headers,
           Host: hostname,
+          Connection: 'close',
           ...(bodyStr ? { 'Content-Length': Buffer.byteLength(bodyStr) } : {}),
         },
         servername: hostname,
       };
 
       const req = https.request(reqOptions, (res) => {
+        console.log(`📡 Response Status: ${res.statusCode}`);
         let data = '';
         res.on('data', (chunk) => (data += chunk));
         res.on('end', () => {
@@ -56,7 +59,15 @@ function safeFetch(url, options = {}) {
         });
       });
 
-      req.on('error', reject);
+      req.setTimeout(30000, () => {
+        req.destroy();
+        reject(new Error('Request Timeout (30s)'));
+      });
+
+      req.on('error', (err) => {
+        console.error('❌ Request Error:', err.message);
+        reject(err);
+      });
       if (bodyStr) req.write(bodyStr);
       req.end();
     } catch (err) {
@@ -117,8 +128,8 @@ app.post('/generate-description', async (req, res) => {
     // --- STEP 3: Send to HuggingFace ---
     console.log('🤖 Sending to HuggingFace AI...');
 
-    // Use the NEW HuggingFace Inference API router endpoint
-    const hfUrl = 'https://router.huggingface.co/hf-inference/models/google/flan-t5-base';
+    // Use a FASTER distilbart model
+    const hfUrl = 'https://router.huggingface.co/hf-inference/models/sshleifer/distilbart-cnn-12-6';
 
     let aiRes = await safeFetch(hfUrl, {
       method: 'POST',
@@ -127,8 +138,7 @@ app.post('/generate-description', async (req, res) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        inputs: `Summarize this GitHub project into a long professional portfolio description :\n\n${truncatedReadme}`,
-        parameters: { max_length: 100, min_length: 20 },
+        inputs: `Summarize this GitHub project into a long professional portfolio description :\n\n${truncatedReadme}`
       }),
     });
 
@@ -149,8 +159,7 @@ app.post('/generate-description', async (req, res) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            inputs: `Summarize this GitHub project into a long professional portfolio description :\n\n${truncatedReadme}`,
-            parameters: { max_length: 100, min_length: 20 },
+            inputs: `Summarize this GitHub project into a long professional portfolio description :\n\n${truncatedReadme}`
           }),
         });
 

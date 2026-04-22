@@ -124,7 +124,7 @@ export default async function handler(req, res) {
     console.log(`📄 README length: ${truncatedReadme.length} chars`);
 
     // --- STEP 3: Send to HuggingFace ---
-    const hfUrl = 'https://router.huggingface.co/hf-inference/models/google/flan-t5-base';
+    const hfUrl = 'https://router.huggingface.co/hf-inference/models/facebook/bart-large-cnn';
 
     let aiRes = await safeFetch(hfUrl, {
       method: 'POST',
