@@ -123,7 +123,10 @@ const AdminDashboard = () => {
 
     try {
       setGenerating(true);
-      const res = await fetch("http://localhost:5000/generate-description", {
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const apiEndpoint = isLocal ? "http://localhost:5000/generate-description" : "/api/generate-description";
+
+      const res = await fetch(apiEndpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
