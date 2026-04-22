@@ -52,7 +52,7 @@ export default function SpotifyPortfolio() {
   const [skills, setSkills] = useState([]);
   const [totalViews, setTotalViews] = useState(0);
 
-  const PROJECT_TABS = ["All", ...new Set(projects.map(p => (p.category || 'Uncategorized').trim()).filter(Boolean))];
+  const PROJECT_TABS = ["All", ...new Set(projects.flatMap(p => (p.category ? p.category.split(',').map(c => c.trim()) : ['Uncategorized'])).filter(Boolean))];
   const SKILL_TABS = ["All", "Frontend", "Backend", "Design", "Tools"];
   const SAVED_TABS = ["All", "Liked"];
 
@@ -141,7 +141,8 @@ export default function SpotifyPortfolio() {
     const matchesSearch =
       title.toLowerCase().includes(searchVal.toLowerCase()) ||
       subtitle.toLowerCase().includes(searchVal.toLowerCase());
-    const matchesFilter = filter === "All" || (p.category || '').toLowerCase().replace(/\s/g, '') === filter.toLowerCase().replace(/\s/g, '');
+    const cats = p.category ? p.category.split(',').map(c => c.trim().toLowerCase().replace(/\s/g, '')) : ['uncategorized'];
+    const matchesFilter = filter === "All" || cats.includes(filter.toLowerCase().replace(/\s/g, ''));
     return matchesSearch && matchesFilter;
   });
 

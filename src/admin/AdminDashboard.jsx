@@ -26,6 +26,7 @@ const defaultProfileForm = {
 const defaultExperienceForm = {
   title: '',
   company: '',
+  category: '',
   start_date: '',
   end_date: '',
   description: '',
@@ -55,6 +56,51 @@ const parseTagsToText = (tags) => {
   return '';
 };
 
+const CategoryInput = ({ value, onChange, placeholder = "Add category (press Enter)" }) => {
+  const [inputValue, setInputValue] = useState('');
+  const categories = value ? value.split(',').map(c => c.trim()).filter(Boolean) : [];
+
+  const handleAdd = (e) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const newCat = inputValue.trim();
+      if (newCat && !categories.includes(newCat)) {
+        onChange([...categories, newCat].join(', '));
+      }
+      setInputValue('');
+    }
+  };
+
+  const handleRemove = (catToRemove) => {
+    onChange(categories.filter(c => c !== catToRemove).join(', '));
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      {categories.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-1">
+          {categories.map((cat, idx) => (
+            <span key={idx} className="flex items-center gap-1 rounded-full bg-slate-800 px-3 py-1 text-xs text-white border border-slate-700">
+              {cat}
+              <button type="button" onClick={() => handleRemove(cat)} className="text-slate-400 hover:text-red-400">
+                <FiX className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <input
+        type="text"
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        onKeyDown={handleAdd}
+        placeholder={placeholder}
+        className="input-base"
+      />
+    </div>
+  );
+};
+
 const AdminDashboard = () => {
   const { activeTheme, setActiveTheme } = useAppTheme();
   const [activeTab, setActiveTab] = useState('projects');
@@ -67,9 +113,42 @@ const AdminDashboard = () => {
   const [experienceForm, setExperienceForm] = useState(defaultExperienceForm);
   const [skillForm, setSkillForm] = useState(defaultSkillForm);
   const [profileForm, setProfileForm] = useState(defaultProfileForm);
+  const [generating, setGenerating] = useState(false);
 
   const [dbTheme, setDbTheme] = useState(activeTheme || 'default');
   const [previewTheme, setPreviewTheme] = useState(activeTheme || 'default');
+
+  const handleGenerateDescription = async () => {
+    if (!projectForm.code) return;
+
+    try {
+      setGenerating(true);
+      const res = await fetch("http://localhost:5000/generate-description", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ github_url: projectForm.code }),
+      });
+
+      const data = await res.json();
+
+      if (data.description) {
+        setProjectForm({
+          ...projectForm,
+          description: data.description,
+        });
+        toast.success("AI description generated!");
+      } else {
+        toast.error("Failed to generate description");
+      }
+    } catch (error) {
+      console.error("AI Gen Error:", error);
+      toast.error("Failed to connect to AI server");
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -312,12 +391,11 @@ const AdminDashboard = () => {
             {activeTab === 'projects' && (
               <form onSubmit={handleProjectSubmit} className="space-y-3">
                 <input type="text" required value={projectForm.title} onChange={(event) => setProjectForm({ ...projectForm, title: event.target.value })} placeholder="Title" className="input-base" />
-                <select value={projectForm.category} onChange={(event) => setProjectForm({ ...projectForm, category: event.target.value })} className="input-base">
-                  <option value="web-design">Web Design</option>
-                  <option value="graphic-design">Graphic Design</option>
-                  <option value="motion-graphic">Motion Graphic</option>
-                  <option value="videography">Videography</option>
-                </select>
+                <CategoryInput 
+                  value={projectForm.category} 
+                  onChange={(val) => setProjectForm({ ...projectForm, category: val })} 
+                  placeholder="Add category (e.g. web-design) and press Enter" 
+                />
                 <textarea required rows="3" value={projectForm.description} onChange={(event) => setProjectForm({ ...projectForm, description: event.target.value })} placeholder="Description" className="input-base resize-none" />
 
                 <div className="space-y-1">
@@ -334,6 +412,14 @@ const AdminDashboard = () => {
 
                 <input type="url" value={projectForm.project_url || ''} onChange={(event) => setProjectForm({ ...projectForm, project_url: event.target.value })} placeholder="Project URL" className="input-base" />
                 <input type="url" value={projectForm.code || ''} onChange={(event) => setProjectForm({ ...projectForm, code: event.target.value })} placeholder="Repository URL" className="input-base" />
+                <button
+                  type="button"
+                  onClick={handleGenerateDescription}
+                  disabled={generating || !projectForm.code}
+                  className="btn-outline w-full"
+                >
+                  {generating ? "Generating..." : "Generate Description AI"}
+                </button>
                 <input type="text" value={projectForm.tags} onChange={(event) => setProjectForm({ ...projectForm, tags: event.target.value })} placeholder="Tags (comma separated)" className="input-base" />
                 <div className="flex gap-2 pt-2">
                   {editingItem && (
@@ -352,6 +438,11 @@ const AdminDashboard = () => {
               <form onSubmit={handleExperienceSubmit} className="space-y-3">
                 <input type="text" required value={experienceForm.title} onChange={(event) => setExperienceForm({ ...experienceForm, title: event.target.value })} placeholder="Title" className="input-base" />
                 <input type="text" required value={experienceForm.company} onChange={(event) => setExperienceForm({ ...experienceForm, company: event.target.value })} placeholder="Company" className="input-base" />
+                <CategoryInput 
+                  value={experienceForm.category || ''} 
+                  onChange={(val) => setExperienceForm({ ...experienceForm, category: val })} 
+                  placeholder="Add category (e.g. Frontend) and press Enter" 
+                />
                 <input type="date" required value={experienceForm.start_date} onChange={(event) => setExperienceForm({ ...experienceForm, start_date: event.target.value })} className="input-base" />
                 <input type="date" value={experienceForm.end_date} onChange={(event) => setExperienceForm({ ...experienceForm, end_date: event.target.value })} disabled={experienceForm.current} className="input-base disabled:opacity-60" />
                 <label className="flex items-center gap-2 text-sm text-slate-300">

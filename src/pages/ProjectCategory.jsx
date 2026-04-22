@@ -5,12 +5,7 @@ import { supabase } from '../supabase/client';
 import { useLanguage } from '../i18n';
 import DStatusLoader from '../components/DStatusLoader';
 
-const categoryLabels = {
-  'graphic-design': 'Graphic Design',
-  'motion-graphic': 'Motion Graphic',
-  'web-design': 'Web Design',
-  videography: 'Videography',
-};
+// Dynamic category labels from params
 
 const safeTags = (tags) => {
   if (!tags) return [];
@@ -42,8 +37,9 @@ const ProjectCategory = () => {
   useEffect(() => {
     const fetchProjects = async () => {
       setLoading(true);
-      const { data } = await supabase.from('projects').select('*').eq('category', category).order('created_at', { ascending: false });
-      setProjects(data || []);
+      const { data } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
+      const filtered = (data || []).filter(p => p.category && p.category.split(',').map(c => c.trim().toLowerCase().replace(/\s/g, '-')).includes(category.toLowerCase().replace(/\s/g, '-')));
+      setProjects(filtered);
       setLoading(false);
     };
     fetchProjects();
@@ -58,7 +54,7 @@ const ProjectCategory = () => {
         </Link>
 
         <section className="mb-6 surface p-6">
-          <h1 className="mb-2 text-3xl font-semibold text-white">{categoryLabels[category] || category}</h1>
+          <h1 className="mb-2 text-3xl font-semibold text-white capitalize">{category.replace(/-/g, ' ')}</h1>
           <p className="text-slate-300">
             {projects.length} {t('projectCategory.projectsCount')}
           </p>

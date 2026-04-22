@@ -5,17 +5,12 @@ import { supabase } from '../supabase/client';
 import { useLanguage } from '../i18n';
 import DStatusLoader from '../components/DStatusLoader';
 
-const categories = [
-  { id: 'all', name: 'All' },
-  { id: 'graphic-design', name: 'Graphic Design' },
-  { id: 'motion-graphic', name: 'Motion Graphic' },
-  { id: 'web-design', name: 'Web Design' },
-  { id: 'videography', name: 'Videography' },
-];
+// Dynamic categories generated in component
 
 const Project = () => {
   const [projects, setProjects] = useState([]);
   const [activeCategory, setActiveCategory] = useState('all');
+  const [categories, setCategories] = useState([{ id: 'all', name: 'All' }]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const { t } = useLanguage();
@@ -24,7 +19,16 @@ const Project = () => {
     const fetchProjects = async () => {
       setLoading(true);
       const { data } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
-      setProjects(data || []);
+      const projectData = data || [];
+      setProjects(projectData);
+      
+      const allCatStrs = projectData.flatMap((item) => (item.category ? item.category.split(',').map(c => c.trim()).filter(Boolean) : []));
+      const uniqueCats = [...new Set(allCatStrs)];
+      const dynamicCats = [
+        { id: 'all', name: 'All' },
+        ...uniqueCats.map(c => ({ id: c, name: c.replace(/-/g, ' ').toUpperCase() }))
+      ];
+      setCategories(dynamicCats);
       setLoading(false);
     };
 
@@ -36,7 +40,7 @@ const Project = () => {
       const title = (project.title || '').toLowerCase();
       const description = (project.description || '').toLowerCase();
       const keyword = searchTerm.toLowerCase();
-      const matchCategory = activeCategory === 'all' || project.category === activeCategory;
+      const matchCategory = activeCategory === 'all' || (project.category && project.category.split(',').map(c => c.trim()).includes(activeCategory));
       const matchKeyword = title.includes(keyword) || description.includes(keyword);
       return matchCategory && matchKeyword;
     });
@@ -74,10 +78,14 @@ const Project = () => {
               <article key={project.id} className="surface interactive-card overflow-hidden">
                 <div className="h-36 border-b-2 border-white/40 bg-black/30">{project.image_url ? <img src={project.image_url} alt={project.title} className="h-full w-full object-cover" /> : null}</div>
                 <div className="p-4">
-                  <p className="mb-2 text-xs uppercase tracking-wide text-slate-300">{(project.category || 'general').replace('-', ' ')}</p>
+                  <div className="mb-2 flex flex-wrap gap-1">
+                    {project.category ? project.category.split(',').map(c => c.trim()).map(c => (
+                      <span key={c} className="text-[10px] uppercase tracking-wide text-slate-300 bg-white/10 px-2 py-0.5 rounded-full">{c.replace('-', ' ')}</span>
+                    )) : <span className="text-[10px] uppercase tracking-wide text-slate-300 bg-white/10 px-2 py-0.5 rounded-full">GENERAL</span>}
+                  </div>
                   <h2 className="mb-2 text-lg">{project.title}</h2>
                   <p className="mb-4 line-clamp-2 text-sm text-slate-300">{project.description}</p>
-                  <Link to={`/projects/${project.category}`} className="interactive-link inline-flex items-center gap-2 text-sm text-white">
+                  <Link to={`/projects/${project.category ? project.category.split(',')[0].trim() : 'all'}`} className="interactive-link inline-flex items-center gap-2 text-sm text-white">
                     View Category <FiArrowRight className="h-4 w-4" />
                   </Link>
                 </div>

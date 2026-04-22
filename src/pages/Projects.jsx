@@ -27,7 +27,8 @@ export default function Projects() {
         const projectData = data || [];
         setProjects(projectData);
         setFilteredProjects(projectData);
-        setCategories([...new Set(projectData.map((item) => item.category).filter(Boolean))]);
+        const allCategories = projectData.flatMap((item) => (item.category ? item.category.split(',').map(c => c.trim()).filter(Boolean) : []));
+        setCategories([...new Set(allCategories)]);
       } catch (error) {
         toast.error('Failed to load projects');
       } finally {
@@ -82,7 +83,7 @@ export default function Projects() {
       setFilteredProjects(projects);
       return;
     }
-    setFilteredProjects(projects.filter((project) => project.category === category));
+    setFilteredProjects(projects.filter((project) => project.category && project.category.split(',').map(c => c.trim()).includes(category)));
   };
 
   const parseTags = (tags) => {
